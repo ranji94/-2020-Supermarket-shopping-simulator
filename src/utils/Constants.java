@@ -3,7 +3,7 @@ package utils;
 public class Constants {
     public static double TIME_STEP = 1.0;
     public static int POCZATKOWA_LICZBA_KLIENTOW = 20;
-    public static int[] SKIER_RIDE_COUNT_RANGE = {1, 10};
+    public static int[] KLIENT_ZAKRES_ILOSCI_PRODUKTOW = {1, 40};
     public static int[] SKIER_RIDE_TIME_RANGE = {10, 30};
     public static int[] SKI_LIFTS_SPEED = {40, 30, 20}; // simulation time from down to up
     public static int[] SKI_LIFTS_FREE_SPACE_PERIOD = {2, 4, 6};
