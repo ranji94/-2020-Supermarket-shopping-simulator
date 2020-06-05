@@ -1,6 +1,8 @@
 package federates.sklep;
 
+import federates.klient.KlientFederate;
 import hla.rti1516e.*;
+import hla.rti1516e.encoding.HLAboolean;
 import hla.rti1516e.encoding.HLAinteger32BE;
 import hla.rti1516e.encoding.HLAunicodeString;
 import hla.rti1516e.exceptions.FederatesCurrentlyJoined;
@@ -9,10 +11,7 @@ import hla.rti1516e.exceptions.FederationExecutionDoesNotExist;
 import hla.rti1516e.exceptions.RTIexception;
 
 import events.ExternalEvent;
-import utils.Constants;
-import utils.EncoderDecoder;
-import utils.Logger;
-import utils.TimeUtils;
+import utils.*;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -30,7 +29,7 @@ public class SklepFederate {
     private SklepFederateAmbassador fedamb;
     protected EncoderDecoder encoder;
 
-    //Interactions
+    //Published Interactions
     protected InteractionClassHandle otworzKolejkeInteractionHandle;
     protected ParameterHandle idKolejkiOtworzHandle;
 
@@ -38,18 +37,115 @@ public class SklepFederate {
     protected ParameterHandle idKolejkiZamknijHandle;
 
     protected InteractionClassHandle klientDoKolejkiInteractionHandle;
-    protected ParameterHandle idKlientaHandle;
+    protected ParameterHandle idKlientaKolejkiHandle;
     protected ParameterHandle idKolejkiKlientHandle;
 
     protected InteractionClassHandle koniecZakupowInteractionHandle;
     protected ParameterHandle idKlientaKoniecHandle;
     protected ParameterHandle iloscProduktowHandle;
 
+    //Subscribed Interactions
+    protected InteractionClassHandle klientWchodziInteractionHandle;
+    protected ParameterHandle idKlientWchodziHandle;
+
     protected InteractionClassHandle stopSimulationInteractionHandle;
 
     private boolean stopSimulation = false;
-    private int initialClientsToCreate = Constants.POCZATKOWA_LICZBA_KLIENTOW;
 
+    /////////////////////////////////////////////////////////////////////////
+
+    private void run() throws RTIexception {
+        while (!stopSimulation) {
+            advanceTime(Constants.TIME_STEP);
+            if (Constants.LOG_TIME_ADVANCE) logger.info(String.format("Time Advanced to %.1f", fedamb.federateTime));
+
+            if(fedamb.getExternalEvents().size() > 0) {
+                fedamb.getExternalEvents().sort(new ExternalEvent.ExternalEventComparator());
+                for (ExternalEvent externalEvent : fedamb.getExternalEvents()) {
+                    switch (externalEvent.getEventType()) {
+                        case KLIENT_WCHODZI:
+                            klientWchodziReceived();
+                            break;
+                    }
+                }
+                fedamb.getExternalEvents().clear();
+            }
+        }
+    }
+
+    private void klientWchodziReceived() {
+        logger.info("KLIENT WSZEDL DO SKLEPU");
+    }
+
+    private void publishAndSubscribe() throws RTIexception
+    {
+        //PUBLISHED
+        otworzKolejkeInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.OtworzKolejke");
+        idKolejkiOtworzHandle = rtiamb.getParameterHandle(otworzKolejkeInteractionHandle, "idKolejki");
+
+        zamknijKolejkeInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.ZamknijKolejke");
+        idKolejkiZamknijHandle = rtiamb.getParameterHandle(zamknijKolejkeInteractionHandle, "idKolejki");
+
+        klientDoKolejkiInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.KlientDoKolejki");
+        idKolejkiKlientHandle = rtiamb.getParameterHandle(klientDoKolejkiInteractionHandle, "idKolejki");
+        idKlientaKolejkiHandle = rtiamb.getParameterHandle(klientDoKolejkiInteractionHandle, "idKlient");
+
+        //SUBSCRIBED
+        klientWchodziInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.KlientWchodzi");
+        idKlientWchodziHandle = rtiamb.getParameterHandle(klientWchodziInteractionHandle, "idKlient");
+
+        //////////////////////////////////////////////////////////////
+
+        rtiamb.subscribeInteractionClass(klientWchodziInteractionHandle);
+
+        rtiamb.publishInteractionClass(otworzKolejkeInteractionHandle);
+        rtiamb.publishInteractionClass(zamknijKolejkeInteractionHandle);
+        rtiamb.publishInteractionClass(klientDoKolejkiInteractionHandle);
+    }
+
+    private void klientDoKolejkiInteraction(String kolejkaId, String klientId) throws RTIexception {
+        HLAunicodeString kolejkaIdValue = encoder.createHLAunicodeString(kolejkaId);
+        HLAunicodeString klientIdValue = encoder.createHLAunicodeString(klientId);
+
+        ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(0);
+        parameters.put(idKolejkiKlientHandle, kolejkaIdValue.toByteArray());
+        parameters.put(idKlientaKolejkiHandle, klientIdValue.toByteArray());
+
+        double newTimeDouble = fedamb.federateTime + fedamb.federateLookahead;
+        LogicalTime time = TimeUtils.convertTime(newTimeDouble);
+
+        logger.info(String.format("[KlientDoKolejkiInteraction] Send interaction, kolejkaId: %s, klientId: %s, [TIME: %.1f]", kolejkaId, klientId, newTimeDouble));
+
+        rtiamb.sendInteraction(klientDoKolejkiInteractionHandle, parameters, generateTag(), time);
+    }
+
+    private void otworzKolejkeInteraction(String kolejkaId) throws RTIexception {
+        HLAunicodeString kolejkaIdValue = encoder.createHLAunicodeString(kolejkaId);
+
+        ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(0);
+        parameters.put(idKolejkiOtworzHandle, kolejkaIdValue.toByteArray());
+
+        double newTimeDouble = fedamb.federateTime + fedamb.federateLookahead;
+        LogicalTime time = TimeUtils.convertTime(newTimeDouble);
+
+        logger.info(String.format("[OtworzKolejkeInteraction] Send interaction, kolejkaId: %s [TIME: %.1f]", kolejkaId, newTimeDouble));
+
+        rtiamb.sendInteraction(otworzKolejkeInteractionHandle, parameters, generateTag(), time);
+    }
+
+    private void zamknijKolejkeInteraction(String kolejkaId) throws RTIexception {
+        HLAunicodeString kolejkaIdValue = encoder.createHLAunicodeString(kolejkaId);
+
+        ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(0);
+        parameters.put(idKolejkiZamknijHandle, kolejkaIdValue.toByteArray());
+
+        double newTimeDouble = fedamb.federateTime + fedamb.federateLookahead;
+        LogicalTime time = TimeUtils.convertTime(newTimeDouble);
+
+        logger.info(String.format("[ZamknijKolejkeInteraction] Send interaction, kolejkaId: %s [TIME: %.1f]", kolejkaId, newTimeDouble));
+
+        rtiamb.sendInteraction(zamknijKolejkeInteractionHandle, parameters, generateTag(), time);
+    }
 
     private void waitForUser()
     {
@@ -87,7 +183,7 @@ public class SklepFederate {
                     (new File("fom.xml")).toURI().toURL()
             };
 
-            rtiamb.createFederationExecution( "SklepFederation", modules );
+            rtiamb.createFederationExecution( "SupermarketFederation", modules );
             logger.info( "Created Federation" );
         }
         catch( FederationExecutionAlreadyExists exists )
@@ -108,7 +204,7 @@ public class SklepFederate {
 
         rtiamb.joinFederationExecution( federateName,
                 "SklepFederateType",
-                "SklepFederation",
+                "SupermarketFederation",
                 joinModules );
 
         logger.info( "Joined Federation as " + federateName );
@@ -136,10 +232,10 @@ public class SklepFederate {
         logger.info( "Time Policy Enabled" );
 
         //publish and subscribe
-//        publishAndSubscribe();
+        publishAndSubscribe();
         logger.info( "Published and Subscribed" );
 
-//        run();
+        run();
 
         // resign from the federation
         rtiamb.resignFederationExecution( ResignAction.DELETE_OBJECTS );
@@ -159,11 +255,6 @@ public class SklepFederate {
         {
             logger.info( "Didn't destroy federation, federates still joined" );
         }
-    }
-
-    private double randomTime() {
-        Random r = new Random();
-        return 1 +(4 * r.nextDouble());
     }
 
     private void enableTimePolicy() throws Exception
@@ -202,42 +293,27 @@ public class SklepFederate {
         return ("(timestamp) " + System.currentTimeMillis()).getBytes();
     }
 
-    /////////////////////////////////////////////////////////////////////////
+    private void endSimulation() {
+        stopSimulation = true;
+    }
 
-//    private void run() throws RTIexception {
-//        while (initialClientsToCreate > 0) {
-//            advanceTime(randomTime());
-//            if (Constants.LOG_TIME_ADVANCE) logger.info(String.format("Time Advanced to %.1f", fedamb.federateTime));
-//
-//            generateNewSkier();
-//            numberOfSkiersToCreate--;
-//
-//            if (Math.round(fedamb.federateTime) % Constants.CONDITION_GENERATION_PERIOD == 0) {
-//                generateNewSkiStationCondition();
-//            }
-//        }
-//
-//        closeSkiStationInteractionSend();
-//
-//        while (!stopSimulation) {
-//            advanceTime(Constants.TIME_STEP);
-//            if (Constants.LOG_TIME_ADVANCE) logger.info(String.format("Time Advanced to %.1f", fedamb.federateTime));
-//
-//            if(fedamb.getExternalEvents().size() > 0) {
-//                fedamb.getExternalEvents().sort(new ExternalEvent.ExternalEventComparator());
-//                for (ExternalEvent externalEvent : fedamb.getExternalEvents()) {
-//                    switch (externalEvent.getEventType()) {
-//                        case STOP_SIMULATION:
-//                            endSimulation();
-//                            break;
-//                    }
-//                }
-//                fedamb.getExternalEvents().clear();
-//            }
-//
-//            if (Math.round(fedamb.federateTime) % Constants.CONDITION_GENERATION_PERIOD == 0) {
-//                generateNewSkiStationCondition();
-//            }
-//        }
-//    }
+    //----------------------------------------------------------
+    //                     STATIC METHODS
+    //----------------------------------------------------------
+    public static void main( String[] args )
+    {
+        String sklepFederateName = "SklepFederate";
+        if( args.length != 0 ) {
+            sklepFederateName = args[0];
+        }
+
+        try {
+            SklepFederate federate = new SklepFederate();
+            federate.runFederate( sklepFederateName );
+        }
+        catch( Exception rtie ) {
+            // an exception occurred, just log the information and exit
+            rtie.printStackTrace();
+        }
+    }
 }

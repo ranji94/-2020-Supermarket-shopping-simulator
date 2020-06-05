@@ -1,4 +1,4 @@
-package federates.sklep;
+package federates.klient;
 
 import events.ExternalEvent;
 import hla.rti1516e.*;
@@ -11,10 +11,10 @@ import utils.TimeUtils;
 
 import java.util.ArrayList;
 
-public class SklepFederateAmbassador extends NullFederateAmbassador {
-    private static final Logger logger = new Logger("SklepFederateAmbassador");
+public class KlientFederateAmbassador extends NullFederateAmbassador {
+    private static final Logger logger = new Logger("KlientFederateAmbassador");
     private EncoderDecoder encoder;
-    private SklepFederate federate;
+    private KlientFederate federate;
 
     protected double federateTime        = 0.0;
     protected double federateLookahead   = 1.0;
@@ -28,7 +28,7 @@ public class SklepFederateAmbassador extends NullFederateAmbassador {
 
     private ArrayList<ExternalEvent> externalEvents = new ArrayList<>();
 
-    public SklepFederateAmbassador(SklepFederate federate) throws RTIexception {
+    public KlientFederateAmbassador(KlientFederate federate) throws RTIexception {
         this.federate = federate;
         this.encoder = new EncoderDecoder();
     }
@@ -46,14 +46,14 @@ public class SklepFederateAmbassador extends NullFederateAmbassador {
     @Override
     public void announceSynchronizationPoint(String label, byte[] tag) throws FederateInternalError {
         logger.info( "Synchronization point announced: " + label );
-        if( label.equals(SklepFederate.READY_TO_RUN) )
+        if( label.equals(KlientFederate.READY_TO_RUN) )
             this.isAnnounced = true;
     }
 
     @Override
     public void federationSynchronized(String label, FederateHandleSet failedToSyncSet) throws FederateInternalError {
         logger.info( "Federation Synchronized: " + label );
-        if( label.equals(SklepFederate.READY_TO_RUN) )
+        if( label.equals(KlientFederate.READY_TO_RUN) )
             this.isReadyToRun = true;
     }
 
@@ -87,11 +87,11 @@ public class SklepFederateAmbassador extends NullFederateAmbassador {
                                     SupplementalReceiveInfo receiveInfo )
             throws FederateInternalError
     {
-        if (interactionClass.equals(federate.klientWchodziInteractionHandle)) {
+        if (interactionClass.equals(federate.stopSimulationInteractionHandle)) {
             double receiveTime = TimeUtils.convertTime(time);
-            logger.info(String.format("Receive interaction KlientWchodzi [TIME:%.1f]", receiveTime));
+            logger.info(String.format("Receive interaction StopSimulation [TIME:%.1f]", receiveTime));
 
-            externalEvents.add(new ExternalEvent(null, ExternalEvent.EventType.KLIENT_WCHODZI, receiveTime));
+            externalEvents.add(new ExternalEvent(null, ExternalEvent.EventType.STOP_SIMULATION, receiveTime));
         }
     }
 
