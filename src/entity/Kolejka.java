@@ -6,7 +6,6 @@ import java.util.List;
 public class Kolejka {
     private String idKolejki;
     private String idKasy;
-    private int dlugoscKolejki;
     private int sredniCzasObslugi;
     private List<Klient> listaKlientow = new ArrayList<>();
 
@@ -33,11 +32,7 @@ public class Kolejka {
     }
 
     public int getDlugoscKolejki() {
-        return dlugoscKolejki;
-    }
-
-    public void setDlugoscKolejki(int dlugoscKolejki) {
-        this.dlugoscKolejki = dlugoscKolejki;
+        return listaKlientow.size();
     }
 
     public int getSredniCzasObslugi() {
