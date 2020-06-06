@@ -1,4 +1,4 @@
-package federates.sklep;
+package federates.kolejka;
 
 import events.ExternalEvent;
 import hla.rti1516e.*;
@@ -11,10 +11,10 @@ import utils.TimeUtils;
 
 import java.util.ArrayList;
 
-public class SklepFederateAmbassador extends NullFederateAmbassador {
-    private static final Logger logger = new Logger("SklepFederateAmbassador");
+public class KolejkaFederateAmbassador extends NullFederateAmbassador {
+    private static final Logger logger = new Logger("KolejkaFederateAmbassador");
     private EncoderDecoder encoder;
-    private SklepFederate federate;
+    private KolejkaFederate federate;
 
     protected double federateTime        = 0.0;
     protected double federateLookahead   = 1.0;
@@ -28,7 +28,7 @@ public class SklepFederateAmbassador extends NullFederateAmbassador {
 
     private ArrayList<ExternalEvent> externalEvents = new ArrayList<>();
 
-    public SklepFederateAmbassador(SklepFederate federate) throws RTIexception {
+    public KolejkaFederateAmbassador(KolejkaFederate federate) throws RTIexception {
         this.federate = federate;
         this.encoder = new EncoderDecoder();
     }
@@ -46,14 +46,14 @@ public class SklepFederateAmbassador extends NullFederateAmbassador {
     @Override
     public void announceSynchronizationPoint(String label, byte[] tag) throws FederateInternalError {
         logger.info( "Synchronization point announced: " + label );
-        if( label.equals(SklepFederate.READY_TO_RUN) )
+        if( label.equals(KolejkaFederate.READY_TO_RUN) )
             this.isAnnounced = true;
     }
 
     @Override
     public void federationSynchronized(String label, FederateHandleSet failedToSyncSet) throws FederateInternalError {
         logger.info( "Federation Synchronized: " + label );
-        if( label.equals(SklepFederate.READY_TO_RUN) )
+        if( label.equals(KolejkaFederate.READY_TO_RUN) )
             this.isReadyToRun = true;
     }
 
@@ -87,12 +87,34 @@ public class SklepFederateAmbassador extends NullFederateAmbassador {
                                     SupplementalReceiveInfo receiveInfo )
             throws FederateInternalError
     {
-        if (interactionClass.equals(federate.klientWchodziInteractionHandle)) {
+        if (interactionClass.equals(federate.otworzKolejkeInteractionHandle)) {
             double receiveTime = TimeUtils.convertTime(time);
-            String klientId = encoder.toString(theParameters.get(federate.idKlientWchodziHandle));
-            logger.info(String.format("Receive interaction KlientWchodzi [TIME:%.1f]", receiveTime));
+            logger.info(String.format("Receive interaction OtworzKolejke [TIME:%.1f]", receiveTime));
 
-            externalEvents.add(new ExternalEvent(klientId, ExternalEvent.EventType.KLIENT_WCHODZI, receiveTime));
+            String idKolejki = encoder.toString(theParameters.get(federate.idKolejkiOtworzSubscribedHandle));
+
+            externalEvents.add(new ExternalEvent(idKolejki, ExternalEvent.EventType.OTWORZ_KOLEJKE, receiveTime));
+        }
+
+        if (interactionClass.equals(federate.zamknijKolejkeInteractionHandle)) {
+            double receiveTime = TimeUtils.convertTime(time);
+            logger.info(String.format("Receive interaction ZamknijKolejke [TIME:%.1f]", receiveTime));
+
+            String idKolejki = encoder.toString(theParameters.get(federate.idKolejkiZamknijHandle));
+
+            externalEvents.add(new ExternalEvent(idKolejki, ExternalEvent.EventType.ZAMKNIJ_KOLEJKE, receiveTime));
+        }
+
+        if (interactionClass.equals(federate.klientDoKolejkiInteractionHandle)) {
+            double receiveTime = TimeUtils.convertTime(time);
+            logger.info(String.format("Receive interaction KlientDoKolejki [TIME:%.1f]", receiveTime));
+
+            String idKolejki = encoder.toString(theParameters.get(federate.idKolejkiKlientHandle));
+            String idKlient = encoder.toString(theParameters.get(federate.idKlientaKolejkiHandle));
+
+            Object [] data = {idKolejki, idKlient};
+
+            externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.KLIENT_DO_KOLEJKI, receiveTime));
         }
     }
 

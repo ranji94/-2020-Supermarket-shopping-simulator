@@ -236,7 +236,7 @@
                 <order>TimeStamp</order>
                 <semantics></semantics>
                 <parameter>
-                    <name>idKlienta</name>
+                    <name>idKlient</name>
                     <dataType>HLAunicodeString</dataType>
                 </parameter>
                 <parameter>

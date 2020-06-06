@@ -1,10 +1,17 @@
 package entity;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
 public class Sklep {
     private int sumaWszystkichKlientow;
     private int sumaKlientowZakupy;
     private int sumaKlientowKolejka;
     private int maxDlugoscKolejki;
+
+    private Map<String, Klient> wszyscyKlienciWSklepie = new HashMap<>();
+    private Map<String, Kolejka> wszystkieKolejkiWSklepie = new HashMap<>();
 
     private static Sklep INSTANCE;
 
@@ -48,5 +55,21 @@ public class Sklep {
 
     public void setMaxDlugoscKolejki(int maxDlugoscKolejki) {
         this.maxDlugoscKolejki = maxDlugoscKolejki;
+    }
+
+    public Map<String, Klient> getWszyscyKlienciWSklepie() {
+        return wszyscyKlienciWSklepie;
+    }
+
+    public void setWszyscyKlienciWSklepie(Map<String, Klient> wszyscyKlienciWSklepie) {
+        this.wszyscyKlienciWSklepie = wszyscyKlienciWSklepie;
+    }
+
+    public Map<String, Kolejka> getWszystkieKolejkiWSklepie() {
+        return wszystkieKolejkiWSklepie;
+    }
+
+    public void setWszystkieKolejkiWSklepie(Map<String, Kolejka> wszystkieKolejkiWSklepie) {
+        this.wszystkieKolejkiWSklepie = wszystkieKolejkiWSklepie;
     }
 }

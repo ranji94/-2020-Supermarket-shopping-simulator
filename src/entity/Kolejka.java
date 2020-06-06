@@ -1,29 +1,34 @@
 package entity;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Kolejka {
-    private int idKolejki;
-    private int idKasy;
+    private String idKolejki;
+    private String idKasy;
     private int dlugoscKolejki;
     private int sredniCzasObslugi;
-    private List<Klient> listaKlientow;
+    private List<Klient> listaKlientow = new ArrayList<>();
 
     public Kolejka() {}
 
-    public int getIdKolejki() {
-        return idKolejki;
-    }
-
-    public void setIdKolejki(int idKolejki) {
+    public Kolejka(String idKolejki) {
         this.idKolejki = idKolejki;
     }
 
-    public int getIdKasy() {
+    public String getIdKolejki() {
+        return idKolejki;
+    }
+
+    public void setIdKolejki(String idKolejki) {
+        this.idKolejki = idKolejki;
+    }
+
+    public String getIdKasy() {
         return idKasy;
     }
 
-    public void setIdKasy(int idKasy) {
+    public void setIdKasy(String idKasy) {
         this.idKasy = idKasy;
     }
 
