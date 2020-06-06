@@ -93,7 +93,7 @@ public class KlientFederate {
         };
 
         rtiamb.joinFederationExecution( federateName,
-                "KlientFederateType",
+                "KlientFederate",
                 "SupermarketFederation",
                 joinModules );
 

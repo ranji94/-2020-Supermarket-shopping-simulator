@@ -1,33 +1,33 @@
 package entity;
 
 public class Klient {
-    private int idKlient;
+    private String idKlient;
     private int iloscProduktow;
     private boolean przyKasie;
 
-    public Klient(int idKlient, int iloscProduktow, boolean przyKasie) {
+    public Klient(String idKlient, int iloscProduktow, boolean przyKasie) {
         this.idKlient = idKlient;
         this.iloscProduktow = iloscProduktow;
         this.przyKasie = przyKasie;
     }
 
-    public Klient(int idKlient, int iloscProduktow) {
+    public Klient(String idKlient, int iloscProduktow) {
         this.idKlient = idKlient;
         this.iloscProduktow = iloscProduktow;
         this.przyKasie = false;
     }
 
-    public Klient(int idKlient) {
+    public Klient(String idKlient) {
         this.idKlient = idKlient;
         this.iloscProduktow = 0;
         this.przyKasie = false;
     }
 
-    public int getIdKlient() {
+    public String getIdKlient() {
         return idKlient;
     }
 
-    public void setIdKlient(int idKlient) {
+    public void setIdKlient(String idKlient) {
         this.idKlient = idKlient;
     }
 

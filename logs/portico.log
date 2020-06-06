@@ -1,0 +1,3 @@
+ERROR [main] portico.lrc.jgroups: FAILURE createFederation: already exists, name=SupermarketFederation
+WARN  [VERIFY_SUSPECT.TimerThread,SupermarketFederation,DESKTOP-57UJ7PS-15360] portico.lrc.jgroups: Detected that federate [SklepFederate] may have crashed, investigating...
+WARN  [Regular] portico.lrc.jgroups: Federate [SklepFederate] has crashed. Sending fake resignation because it was too rude to.

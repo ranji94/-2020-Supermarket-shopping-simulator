@@ -1,5 +1,8 @@
 package federates.sklep;
 
+import entity.Klient;
+import entity.Kolejka;
+import entity.Sklep;
 import federates.klient.KlientFederate;
 import hla.rti1516e.*;
 import hla.rti1516e.encoding.HLAboolean;
@@ -18,6 +21,9 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 public class SklepFederate {
@@ -51,11 +57,20 @@ public class SklepFederate {
     protected InteractionClassHandle stopSimulationInteractionHandle;
 
     private boolean stopSimulation = false;
+    private boolean kolejkaPoczatkowaIstnieje = false;
 
     /////////////////////////////////////////////////////////////////////////
 
+    private double randomTime() {
+        Random r = new Random();
+        return 1 +(4 * r.nextDouble());
+    }
+
     private void run() throws RTIexception {
         while (!stopSimulation) {
+
+            boolean isClientsInShop = Sklep.getInstance().getWszyscyKlienciWSklepie().size() > 0;
+
             advanceTime(Constants.TIME_STEP);
             if (Constants.LOG_TIME_ADVANCE) logger.info(String.format("Time Advanced to %.1f", fedamb.federateTime));
 
@@ -64,17 +79,76 @@ public class SklepFederate {
                 for (ExternalEvent externalEvent : fedamb.getExternalEvents()) {
                     switch (externalEvent.getEventType()) {
                         case KLIENT_WCHODZI:
-                            klientWchodziReceived();
+                            if(Sklep.getInstance().getWszyscyKlienciWSklepie().size() < Constants.MAX_KLIENTOW_W_SKLEPIE) {
+                                String klientId = (String) externalEvent.getData();
+                                klientWchodziReceived(klientId);
+                            }
                             break;
                     }
                 }
                 fedamb.getExternalEvents().clear();
             }
+
+            if (isClientsInShop) {
+                Random rand = new Random();
+                int coKtoryKlientKonczyZakupy = Math.round(1 / Constants.PRAWDOPODOBIENSTWO_ZAKONCZENIA_ZAKUPOW);
+                int randomValue = rand.nextInt(coKtoryKlientKonczyZakupy) + 1;
+                List<String> allClientIds = new ArrayList<>(Sklep.getInstance().getWszyscyKlienciWSklepie().keySet());
+
+                if (coKtoryKlientKonczyZakupy == randomValue) {
+                    String wylosowanyKlientId = allClientIds.get(rand.nextInt(allClientIds.size()));
+                    logger.info(String.format("Wylosowano klienta o ID: %s", wylosowanyKlientId));
+
+                    if(!kolejkaPoczatkowaIstnieje) {
+                        String idKolejki = UUIDUtils.shortId();
+                        otworzKolejkeInteraction(idKolejki);
+                        kolejkaPoczatkowaIstnieje=true;
+                    }
+
+                    assignClientToShortestQueue(wylosowanyKlientId);
+                }
+            }
         }
     }
 
-    private void klientWchodziReceived() {
-        logger.info("KLIENT WSZEDL DO SKLEPU");
+    private void assignClientToShortestQueue(String klientId) {
+        int shortestQueueLong = Integer.MAX_VALUE;
+        Kolejka shortestQueue = new Kolejka();
+        List<String> keysAsArray = new ArrayList<String>(Sklep.getInstance().getWszystkieKolejkiWSklepie().keySet());
+
+        /////////// TU SKONCZYLEM, NIE DA SIE ODCZYTAC ID KOLEJKI BO mapa Sklep.getInstance().getWszystkieKolejkiWSklepie
+        /////////// JEST ZAWSZE PUSTA MIMO ŻE W KOLEJKAFEDERATE ZOSTALY UTWORZONE KOLEJKI
+
+//        try {
+//            klientDoKolejkiInteraction(shortestQueue.getIdKolejki(), klientId);
+//        }
+//        catch(RTIexception e) {
+//            // nothing
+//        }
+    }
+
+    private void klientWchodziReceived(String klientId) {
+        logger.info(String.format("[KlientWchodziReceivedInteraction]: Client with id: %s, entered to shop.", klientId));
+        Random rand = new Random();
+
+        float probability = Constants.PROCENT_KLIENTOW_KUPUJACYCH_5_PRODUKTOW / 100f;
+        int coKtoryKlient = Math.round(1 / probability);
+        int randomizedClient = rand.nextInt(coKtoryKlient) + 1;
+
+        Sklep sklep = Sklep.getInstance();
+        sklep.setSumaWszystkichKlientow(sklep.getSumaWszystkichKlientow() + 1);
+        sklep.setSumaKlientowZakupy(sklep.getSumaKlientowZakupy() + 1);
+
+        Klient klient = new Klient(klientId);
+
+        if(coKtoryKlient != randomizedClient) {
+            klient.setIloscProduktow(rand.nextInt(Constants.MAX_PRODUKTOW_KLIENTA + 1) + 5);
+        }
+        else {
+            klient.setIloscProduktow(rand.nextInt(5) + 1);
+        }
+
+        sklep.getWszyscyKlienciWSklepie().put(klientId, klient);
     }
 
     private void publishAndSubscribe() throws RTIexception
