@@ -2,10 +2,11 @@ package entity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Sklep {
-    private int sumaWszystkichKlientow;
     private int sumaKlientowZakupy;
     private int sumaKlientowKolejka;
     private int maxDlugoscKolejki;
@@ -26,27 +27,21 @@ public class Sklep {
     }
 
     public int getSumaWszystkichKlientow() {
-        return sumaWszystkichKlientow;
-    }
-
-    public void setSumaWszystkichKlientow(int sumaWszystkichKlientow) {
-        this.sumaWszystkichKlientow = sumaWszystkichKlientow;
+        return wszyscyKlienciWSklepie.size();
     }
 
     public int getSumaKlientowZakupy() {
-        return sumaKlientowZakupy;
-    }
-
-    public void setSumaKlientowZakupy(int sumaKlientowZakupy) {
-        this.sumaKlientowZakupy = sumaKlientowZakupy;
+        return getSumaWszystkichKlientow() - getSumaKlientowKolejka();
     }
 
     public int getSumaKlientowKolejka() {
-        return sumaKlientowKolejka;
-    }
+        int total = 0;
 
-    public void setSumaKlientowKolejka(int sumaKlientowKolejka) {
-        this.sumaKlientowKolejka = sumaKlientowKolejka;
+        for(Map.Entry<String, Kolejka> q : wszystkieKolejkiWSklepie.entrySet()) {
+            total += q.getValue().getDlugoscKolejki();
+        }
+
+        return total;
     }
 
     public int getMaxDlugoscKolejki() {
@@ -71,5 +66,16 @@ public class Sklep {
 
     public void setWszystkieKolejkiWSklepie(Map<String, Kolejka> wszystkieKolejkiWSklepie) {
         this.wszystkieKolejkiWSklepie = wszystkieKolejkiWSklepie;
+    }
+
+    @Override
+    public String toString() {
+        return "Sklep{" +
+                "sumaKlientowZakupy=" + sumaKlientowZakupy +
+                ", sumaKlientowKolejka=" + sumaKlientowKolejka +
+                ", maxDlugoscKolejki=" + maxDlugoscKolejki +
+                ", wszyscyKlienciWSklepie=" + wszyscyKlienciWSklepie +
+                ", wszystkieKolejkiWSklepie=" + wszystkieKolejkiWSklepie +
+                '}';
     }
 }

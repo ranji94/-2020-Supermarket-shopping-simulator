@@ -46,4 +46,13 @@ public class Klient {
     public void setPrzyKasie(boolean przyKasie) {
         this.przyKasie = przyKasie;
     }
+
+    @Override
+    public String toString() {
+        return "Klient{" +
+                "idKlient='" + idKlient + '\'' +
+                ", iloscProduktow=" + iloscProduktow +
+                ", przyKasie=" + przyKasie +
+                '}';
+    }
 }

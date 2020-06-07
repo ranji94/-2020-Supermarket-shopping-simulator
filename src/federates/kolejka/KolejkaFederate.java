@@ -10,6 +10,8 @@ import hla.rti1516e.exceptions.FederatesCurrentlyJoined;
 import hla.rti1516e.exceptions.FederationExecutionAlreadyExists;
 import hla.rti1516e.exceptions.FederationExecutionDoesNotExist;
 import hla.rti1516e.exceptions.RTIexception;
+import repository.SklepRepository;
+import repository.SklepRepositoryImpl;
 import utils.*;
 
 import java.io.BufferedReader;
@@ -17,10 +19,7 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 public class KolejkaFederate {
     private static final Logger logger = new Logger("KolejkaFederate");
@@ -30,6 +29,7 @@ public class KolejkaFederate {
     private RTIambassador rtiamb;
     private KolejkaFederateAmbassador fedamb;
     protected EncoderDecoder encoder;
+    SklepRepository sklepRepository = new SklepRepositoryImpl();
 
     // Interactions Published
     protected InteractionClassHandle otworzKaseInteractionHandle;
@@ -228,8 +228,8 @@ public class KolejkaFederate {
                             zamknijKolejkeReceived();
                             break;
                         case KLIENT_DO_KOLEJKI:
-                            Object [] data = (Object [])externalEvent.getData();
-                            klientDoKolejkiReceived(data);
+                            String klientId = (String) externalEvent.getData();
+                            klientDoKolejkiReceived(klientId);
                             break;
                     }
                 }
@@ -246,24 +246,26 @@ public class KolejkaFederate {
         kolejka.setIdKolejki(idKolejki);
         kolejka.setIdKasy(idKolejki);
         kolejka.setSredniCzasObslugi(rand.nextInt(10 + 1) + 1);
+        kolejka.setListaKlientow(new ArrayList<>());
 
-        Map<String, Kolejka> kolejkiWSklepie = sklep.getWszystkieKolejkiWSklepie();
-        kolejkiWSklepie.put(idKolejki, kolejka);
-        sklep.setWszystkieKolejkiWSklepie(kolejkiWSklepie);
+        Map<String, Kolejka> kolejki = sklep.getWszystkieKolejkiWSklepie();
+        kolejki.put(kolejka.getIdKolejki(), kolejka);
+        sklep.setWszystkieKolejkiWSklepie(kolejki);
 
         logger.info(String.format("Otworzono kolejkę o id: %s, suma otwartych kolejek w sklepie: %s", idKolejki, sklep.getWszystkieKolejkiWSklepie().size()));
-        logger.info(String.format("WSZYSTKIE OTWARTE KOLEJKI W SKLEPIE: %s", sklep.getWszystkieKolejkiWSklepie().toString()));
     }
 
     private void zamknijKolejkeReceived() {
 
     }
 
-    private void klientDoKolejkiReceived(Object[] data) {
-        String idKolejki = (String) data[0];
-        String idKlient = (String) data[1];
+    private void klientDoKolejkiReceived(String idKlient) {
+        Klient klient = sklepRepository.findClientById(idKlient);
+        Kolejka najkrotszaKolejka = sklepRepository.findShortestQueue();
 
-        logger.info(String.format("Klient %s, dołączył do kolejki %s. Suma klientów w kolejce: %s", idKlient, idKolejki, Sklep.getInstance().getWszystkieKolejkiWSklepie().size()));
+        sklepRepository.addClientToQueue(klient, najkrotszaKolejka);
+
+        logger.info(String.format("Klient %s, dołączył do kolejki %s. Suma klientów w kolejce: %s", idKlient, najkrotszaKolejka.toString(), Sklep.getInstance().getWszystkieKolejkiWSklepie().size()));
     }
 
     private void publishAndSubscribe() throws RTIexception
