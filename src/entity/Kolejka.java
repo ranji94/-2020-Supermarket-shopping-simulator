@@ -50,4 +50,14 @@ public class Kolejka {
     public void setListaKlientow(List<Klient> listaKlientow) {
         this.listaKlientow = listaKlientow;
     }
+
+    @Override
+    public String toString() {
+        return "Kolejka{" +
+                "idKolejki='" + idKolejki + '\'' +
+                ", idKasy='" + idKasy + '\'' +
+                ", sredniCzasObslugi=" + sredniCzasObslugi +
+                ", listaKlientow=" + listaKlientow +
+                '}';
+    }
 }

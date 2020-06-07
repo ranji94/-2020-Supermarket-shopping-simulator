@@ -14,6 +14,8 @@ import hla.rti1516e.exceptions.FederationExecutionDoesNotExist;
 import hla.rti1516e.exceptions.RTIexception;
 
 import events.ExternalEvent;
+import repository.SklepRepository;
+import repository.SklepRepositoryImpl;
 import utils.*;
 
 import java.io.BufferedReader;
@@ -34,6 +36,7 @@ public class SklepFederate {
     private RTIambassador rtiamb;
     private SklepFederateAmbassador fedamb;
     protected EncoderDecoder encoder;
+    SklepRepository sklepRepository = new SklepRepositoryImpl();
 
     //Published Interactions
     protected InteractionClassHandle otworzKolejkeInteractionHandle;
@@ -68,8 +71,12 @@ public class SklepFederate {
 
     private void run() throws RTIexception {
         while (!stopSimulation) {
-
-            boolean isClientsInShop = Sklep.getInstance().getWszyscyKlienciWSklepie().size() > 0;
+            Sklep sklep = Sklep.getInstance();
+            logger.info(String.format("[SklepFederate] Wszyscy klienci w sklepie: %s, klienci na zakupach: %s, klienci w kolejkach: %s",
+                    sklep.getSumaWszystkichKlientow(),
+                    sklep.getSumaKlientowZakupy(),
+                    sklep.getSumaKlientowKolejka()));
+            boolean isClientsInShop = sklep.getWszyscyKlienciWSklepie().size() > 0;
 
             advanceTime(Constants.TIME_STEP);
             if (Constants.LOG_TIME_ADVANCE) logger.info(String.format("Time Advanced to %.1f", fedamb.federateTime));
@@ -105,26 +112,10 @@ public class SklepFederate {
                         kolejkaPoczatkowaIstnieje=true;
                     }
 
-                    assignClientToShortestQueue(wylosowanyKlientId);
+                    klientDoKolejkiInteraction(wylosowanyKlientId);
                 }
             }
         }
-    }
-
-    private void assignClientToShortestQueue(String klientId) {
-        int shortestQueueLong = Integer.MAX_VALUE;
-        Kolejka shortestQueue = new Kolejka();
-        List<String> keysAsArray = new ArrayList<String>(Sklep.getInstance().getWszystkieKolejkiWSklepie().keySet());
-
-        /////////// TU SKONCZYLEM, NIE DA SIE ODCZYTAC ID KOLEJKI BO mapa Sklep.getInstance().getWszystkieKolejkiWSklepie
-        /////////// JEST ZAWSZE PUSTA MIMO ŻE W KOLEJKAFEDERATE ZOSTALY UTWORZONE KOLEJKI
-
-//        try {
-//            klientDoKolejkiInteraction(shortestQueue.getIdKolejki(), klientId);
-//        }
-//        catch(RTIexception e) {
-//            // nothing
-//        }
     }
 
     private void klientWchodziReceived(String klientId) {
@@ -135,10 +126,6 @@ public class SklepFederate {
         int coKtoryKlient = Math.round(1 / probability);
         int randomizedClient = rand.nextInt(coKtoryKlient) + 1;
 
-        Sklep sklep = Sklep.getInstance();
-        sklep.setSumaWszystkichKlientow(sklep.getSumaWszystkichKlientow() + 1);
-        sklep.setSumaKlientowZakupy(sklep.getSumaKlientowZakupy() + 1);
-
         Klient klient = new Klient(klientId);
 
         if(coKtoryKlient != randomizedClient) {
@@ -148,7 +135,9 @@ public class SklepFederate {
             klient.setIloscProduktow(rand.nextInt(5) + 1);
         }
 
-        sklep.getWszyscyKlienciWSklepie().put(klientId, klient);
+        logger.info(String.format("[KlientWchodziReceived] Utworzono klienta: %s, sklepRepositoryInerface: %s", klient.toString(), sklepRepository));
+
+        sklepRepository.addClientToShop(klient);
     }
 
     private void publishAndSubscribe() throws RTIexception
@@ -177,18 +166,16 @@ public class SklepFederate {
         rtiamb.publishInteractionClass(klientDoKolejkiInteractionHandle);
     }
 
-    private void klientDoKolejkiInteraction(String kolejkaId, String klientId) throws RTIexception {
-        HLAunicodeString kolejkaIdValue = encoder.createHLAunicodeString(kolejkaId);
+    private void klientDoKolejkiInteraction(String klientId) throws RTIexception {
         HLAunicodeString klientIdValue = encoder.createHLAunicodeString(klientId);
 
         ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(0);
-        parameters.put(idKolejkiKlientHandle, kolejkaIdValue.toByteArray());
         parameters.put(idKlientaKolejkiHandle, klientIdValue.toByteArray());
 
         double newTimeDouble = fedamb.federateTime + fedamb.federateLookahead;
         LogicalTime time = TimeUtils.convertTime(newTimeDouble);
 
-        logger.info(String.format("[KlientDoKolejkiInteraction] Send interaction, kolejkaId: %s, klientId: %s, [TIME: %.1f]", kolejkaId, klientId, newTimeDouble));
+        logger.info(String.format("[KlientDoKolejkiInteraction] Send interaction, klientId: %s, [TIME: %.1f]", klientId, newTimeDouble));
 
         rtiamb.sendInteraction(klientDoKolejkiInteractionHandle, parameters, generateTag(), time);
     }

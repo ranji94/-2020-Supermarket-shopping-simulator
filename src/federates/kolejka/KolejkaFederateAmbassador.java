@@ -109,12 +109,9 @@ public class KolejkaFederateAmbassador extends NullFederateAmbassador {
             double receiveTime = TimeUtils.convertTime(time);
             logger.info(String.format("Receive interaction KlientDoKolejki [TIME:%.1f]", receiveTime));
 
-            String idKolejki = encoder.toString(theParameters.get(federate.idKolejkiKlientHandle));
             String idKlient = encoder.toString(theParameters.get(federate.idKlientaKolejkiHandle));
 
-            Object [] data = {idKolejki, idKlient};
-
-            externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.KLIENT_DO_KOLEJKI, receiveTime));
+            externalEvents.add(new ExternalEvent(idKlient, ExternalEvent.EventType.KLIENT_DO_KOLEJKI, receiveTime));
         }
     }
 
