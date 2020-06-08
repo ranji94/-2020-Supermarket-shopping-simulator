@@ -74,7 +74,6 @@ public class Sklep {
                 "sumaKlientowZakupy=" + sumaKlientowZakupy +
                 ", sumaKlientowKolejka=" + sumaKlientowKolejka +
                 ", maxDlugoscKolejki=" + maxDlugoscKolejki +
-                ", wszyscyKlienciWSklepie=" + wszyscyKlienciWSklepie +
                 ", wszystkieKolejkiWSklepie=" + wszystkieKolejkiWSklepie +
                 '}';
     }

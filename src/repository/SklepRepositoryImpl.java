@@ -59,7 +59,7 @@ public class SklepRepositoryImpl implements SklepRepository {
             sklep.getWszystkieKolejkiWSklepie().put(kolejka.getIdKolejki(), kolejka);
         }
 
-        List<Klient> listaKlientowWKolejce = sklep.getWszystkieKolejkiWSklepie().get(kolejka.getIdKolejki()).getListaKlientow();
+        List<Klient> listaKlientowWKolejce = kolejka.getListaKlientow();
 
         if(!listaKlientowWKolejce.contains(klient)) {
             listaKlientowWKolejce.add(klient);

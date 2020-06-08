@@ -72,7 +72,7 @@ public class SklepFederate {
     private void run() throws RTIexception {
         while (!stopSimulation) {
             Sklep sklep = Sklep.getInstance();
-            logger.info(String.format("[SklepFederate] Wszyscy klienci w sklepie: %s, klienci na zakupach: %s, klienci w kolejkach: %s",
+            logger.info(String.format("[SklepFederate] Wszyscy klienci w sklepie: %s, klienci na zakupach: %s, klienci w kolejkach: %s, liczba kolejek: %s",
                     sklep.getSumaWszystkichKlientow(),
                     sklep.getSumaKlientowZakupy(),
                     sklep.getSumaKlientowKolejka()));

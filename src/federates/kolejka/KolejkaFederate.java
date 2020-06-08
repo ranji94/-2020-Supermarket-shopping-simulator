@@ -225,7 +225,8 @@ public class KolejkaFederate {
                             otworzKolejkeReceived(kolejkaId);
                             break;
                         case ZAMKNIJ_KOLEJKE:
-                            zamknijKolejkeReceived();
+                            String kolejkaId2 = (String) externalEvent.getData();
+                            zamknijKolejkeReceived(kolejkaId2);
                             break;
                         case KLIENT_DO_KOLEJKI:
                             String klientId = (String) externalEvent.getData();
@@ -255,22 +256,30 @@ public class KolejkaFederate {
         logger.info(String.format("Otworzono kolejkę o id: %s, suma otwartych kolejek w sklepie: %s", idKolejki, sklep.getWszystkieKolejkiWSklepie().size()));
     }
 
-    private void zamknijKolejkeReceived() {
+    private void zamknijKolejkeReceived(String idKolejki) {
 
     }
 
     private void klientDoKolejkiReceived(String idKlient) {
         Klient klient = sklepRepository.findClientById(idKlient);
         Kolejka najkrotszaKolejka = sklepRepository.findShortestQueue();
+        Sklep sklep = Sklep.getInstance();
 
-        sklepRepository.addClientToQueue(klient, najkrotszaKolejka);
+        List<Klient> klienci = najkrotszaKolejka.getListaKlientow();
+        klienci.add(klient);
+        najkrotszaKolejka.setListaKlientow(klienci);
+        if(najkrotszaKolejka.getDlugoscKolejki()>=Constants.MAX_DLUGOSC_KOLEJKI-1){
+            String idKolejki = UUIDUtils.shortId();
+            otworzKolejkeReceived(idKolejki);
+        }
+        //sklepRepository.addClientToQueue(klient, najkrotszaKolejka);
 
-        logger.info(String.format("Klient %s, dołączył do kolejki %s. Suma klientów w kolejce: %s", idKlient, najkrotszaKolejka.toString(), Sklep.getInstance().getWszystkieKolejkiWSklepie().size()));
+        logger.info(String.format("Klient %s, dołączył do kolejki %s. Suma klientów w kolejce: %s", idKlient, najkrotszaKolejka.toString(), najkrotszaKolejka.getDlugoscKolejki()));
     }
 
     private void publishAndSubscribe() throws RTIexception
     {
-        // PUBISHED
+        // PUBLISHED
         otworzKaseInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.OtworzKase");
         idKasyOtworzHandle = rtiamb.getParameterHandle(otworzKaseInteractionHandle, "idKasy");
         idKolejkiOtworzHandle = rtiamb.getParameterHandle(otworzKaseInteractionHandle, "idKolejki");
