@@ -1,13 +1,15 @@
 package entity;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Kolejka {
     private String idKolejki;
     private String idKasy;
     private int sredniCzasObslugi;
-    private List<Klient> listaKlientow = new ArrayList<>();
+    private Map<String, Klient> listaKlientow = new HashMap<>();
 
     public Kolejka() {}
 
@@ -43,11 +45,11 @@ public class Kolejka {
         this.sredniCzasObslugi = sredniCzasObslugi;
     }
 
-    public List<Klient> getListaKlientow() {
+    public Map<String, Klient> getListaKlientow() {
         return listaKlientow;
     }
 
-    public void setListaKlientow(List<Klient> listaKlientow) {
+    public void setListaKlientow(Map<String, Klient> listaKlientow) {
         this.listaKlientow = listaKlientow;
     }
 

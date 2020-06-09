@@ -1,4 +1,4 @@
-package federates.kolejka;
+package federates.interfejs;
 
 import events.ExternalEvent;
 import hla.rti1516e.*;
@@ -11,10 +11,10 @@ import utils.TimeUtils;
 
 import java.util.ArrayList;
 
-public class KolejkaFederateAmbassador extends NullFederateAmbassador {
-    private static final Logger logger = new Logger("KolejkaFederateAmbassador");
+public class InterfejsFederateAmbassador extends NullFederateAmbassador {
+    private static final Logger logger = new Logger("InterfejsFederateAmbassador");
     private EncoderDecoder encoder;
-    private KolejkaFederate federate;
+    private InterfejsFederate federate;
 
     protected double federateTime        = 0.0;
     protected double federateLookahead   = 1.0;
@@ -28,7 +28,7 @@ public class KolejkaFederateAmbassador extends NullFederateAmbassador {
 
     private ArrayList<ExternalEvent> externalEvents = new ArrayList<>();
 
-    public KolejkaFederateAmbassador(KolejkaFederate federate) throws RTIexception {
+    public InterfejsFederateAmbassador(InterfejsFederate federate) throws RTIexception {
         this.federate = federate;
         this.encoder = new EncoderDecoder();
     }
@@ -46,14 +46,14 @@ public class KolejkaFederateAmbassador extends NullFederateAmbassador {
     @Override
     public void announceSynchronizationPoint(String label, byte[] tag) throws FederateInternalError {
         logger.info( "Synchronization point announced: " + label );
-        if( label.equals(KolejkaFederate.READY_TO_RUN) )
+        if( label.equals(InterfejsFederate.READY_TO_RUN) )
             this.isAnnounced = true;
     }
 
     @Override
     public void federationSynchronized(String label, FederateHandleSet failedToSyncSet) throws FederateInternalError {
         logger.info( "Federation Synchronized: " + label );
-        if( label.equals(KolejkaFederate.READY_TO_RUN) )
+        if( label.equals(InterfejsFederate.READY_TO_RUN) )
             this.isReadyToRun = true;
     }
 
@@ -87,33 +87,11 @@ public class KolejkaFederateAmbassador extends NullFederateAmbassador {
                                     SupplementalReceiveInfo receiveInfo )
             throws FederateInternalError
     {
-        if (interactionClass.equals(federate.otworzKolejkeInteractionHandle)) {
+        if (interactionClass.equals(federate.stopSimulationInteractionHandle)) {
             double receiveTime = TimeUtils.convertTime(time);
-            logger.info(String.format("Receive interaction OtworzKolejke [TIME:%.1f]", receiveTime));
+            logger.info(String.format("Receive interaction StopSimulation [TIME:%.1f]", receiveTime));
 
-            String idKolejki = encoder.toString(theParameters.get(federate.idKolejkiOtworzSubscribedHandle));
-
-            externalEvents.add(new ExternalEvent(idKolejki, ExternalEvent.EventType.OTWORZ_KOLEJKE, receiveTime));
-        }
-
-        if (interactionClass.equals(federate.zamknijKolejkeInteractionHandle)) {
-            double receiveTime = TimeUtils.convertTime(time);
-            logger.info(String.format("Receive interaction ZamknijKolejke [TIME:%.1f]", receiveTime));
-
-            String idKolejki = encoder.toString(theParameters.get(federate.idKolejkiZamknijHandle));
-
-            externalEvents.add(new ExternalEvent(idKolejki, ExternalEvent.EventType.ZAMKNIJ_KOLEJKE, receiveTime));
-        }
-
-        if (interactionClass.equals(federate.klientDoKolejkiInteractionHandle)) {
-            double receiveTime = TimeUtils.convertTime(time);
-            logger.info(String.format("Receive interaction KlientDoKolejki [TIME:%.1f]", receiveTime));
-
-            String idKlient = encoder.toString(theParameters.get(federate.idKlientaKolejkiHandle));
-            int iloscProduktow = encoder.toInteger32(theParameters.get(federate.iloscProduktowHandle));
-            Object [] data = { idKlient, iloscProduktow };
-
-            externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.KLIENT_DO_KOLEJKI, receiveTime));
+            externalEvents.add(new ExternalEvent(null, ExternalEvent.EventType.STOP_SIMULATION, receiveTime));
         }
     }
 
