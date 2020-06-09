@@ -6,6 +6,8 @@ import entity.Kolejka;
 import entity.Sklep;
 import events.ExternalEvent;
 import hla.rti1516e.*;
+import hla.rti1516e.encoding.HLAboolean;
+import hla.rti1516e.encoding.HLAinteger32BE;
 import hla.rti1516e.encoding.HLAunicodeString;
 import hla.rti1516e.exceptions.FederatesCurrentlyJoined;
 import hla.rti1516e.exceptions.FederationExecutionAlreadyExists;
@@ -28,20 +30,20 @@ public class KolejkaFederate {
     private RTIambassador rtiamb;
     private KolejkaFederateAmbassador fedamb;
     protected EncoderDecoder encoder;
-    Map<String, Kolejka> klienciWKolejce;
 
     // Interactions Published
     protected InteractionClassHandle otworzKaseInteractionHandle;
-    protected ParameterHandle idKolejkiOtworzHandle;
     protected ParameterHandle idKasyOtworzHandle;
     protected ParameterHandle uprzywilejowanaOtworzHandle;
+    protected ParameterHandle czasObslugiHandle;
 
     protected InteractionClassHandle zamknijKaseInteractionHandle;
     protected ParameterHandle idKasyZamknijHandle;
 
-    protected InteractionClassHandle nastepnyKlientInteractionHandle;
-    protected ParameterHandle idKlientaNastepnyHandle;
-    protected ParameterHandle idKasyNastepnyHandle;
+    protected InteractionClassHandle klientDoKasyInteractionHandle;
+    protected ParameterHandle idKlientaDoKasyHandle;
+    protected ParameterHandle idKasyDoKasyHandle;
+    protected ParameterHandle iloscProduktowDoKasyHandle;
 
     // Interactions Subscribed
     protected InteractionClassHandle otworzKolejkeInteractionHandle;
@@ -54,6 +56,9 @@ public class KolejkaFederate {
     protected ParameterHandle idKlientaKolejkiHandle;
     protected ParameterHandle iloscProduktowHandle;
 
+    protected InteractionClassHandle koniecZakupowInteractionHandle;
+    protected ParameterHandle idKlientaKoniecHandle;
+    protected ParameterHandle idKasyKoniecHandle;
     /////////////////////////////////////////////////
 
     private boolean sklepIsOpen = true;
@@ -220,22 +225,48 @@ public class KolejkaFederate {
                 for (ExternalEvent externalEvent : fedamb.getExternalEvents()) {
                     switch (externalEvent.getEventType()) {
                         case OTWORZ_KOLEJKE:
-                            String kolejkaId = (String) externalEvent.getData();
-                            otworzKolejkeReceived(kolejkaId);
+                            String otworzKolejkeKolejkaId = (String) externalEvent.getData();
+                            otworzKolejkeReceived(otworzKolejkeKolejkaId);
                             break;
                         case ZAMKNIJ_KOLEJKE:
-                            String kolejkaId2 = (String) externalEvent.getData();
-                            zamknijKolejkeReceived(kolejkaId2);
+                            String zamknijKolejkeKolejkaId = (String) externalEvent.getData();
+                            zamknijKolejkeReceived(zamknijKolejkeKolejkaId);
                             break;
                         case KLIENT_DO_KOLEJKI:
-                            Object [] data = (Object [])externalEvent.getData();
-                            klientDoKolejkiReceived(data);
+                            Object [] klientDoKolejkiData = (Object [])externalEvent.getData();
+                            klientDoKolejkiReceived(klientDoKolejkiData);
+                            break;
+                        case KONIEC_ZAKUPOW:
+                            Object [] koniecZakupowData = (Object [])externalEvent.getData();
+                            koniecZakupowInteractionReceived(koniecZakupowData);
                             break;
                     }
                 }
                 fedamb.getExternalEvents().clear();
             }
+
+            //List<String> wszystkieKolejki = new ArrayList<>(Interfejs.getInstance().getWszystkieKolejki().keySet());
+            //if(wszystkieKolejki.size() > 0) {
+                //Random rand = new Random();
+                ////////// TU ZAKONCZYLEM, KOLEJKA MUSI ZOSTAC WYLOSOWANA
+                Kolejka wylosowanaKolejka = Interfejs.getInstance().getWszystkieKolejki().get(Interfejs.getInstance().getWszystkieKolejki().size());
+            if(wylosowanaKolejka != null) {
+                if (wylosowanaKolejka.getDlugoscKolejki() > 0) {
+                    wylosowanaKolejka.getListaKlientow().peek().setPrzyKasie(true);
+                    Klient klient = wylosowanaKolejka.getListaKlientow().peek();
+
+                    klientDoKasyInteraction(wylosowanaKolejka.getIdKasy(), klient.getIdKlient(), klient.getIloscProduktow());
+                }
+            }
         }
+    }
+
+    private void koniecZakupowInteractionReceived(Object [] data) {
+        String idKlient = (String) data[0];
+        String idKasa = (String) data[1];
+
+        Interfejs.getInstance().getWszystkieKolejki().get(idKasa).getListaKlientow().remove();
+        logger.info(String.format("[KoniecZakupow] Usunięto klienta %s z kolejki %s", idKlient, idKasa));
     }
 
     private void otworzKolejkeReceived(String idKolejki) {
@@ -245,9 +276,15 @@ public class KolejkaFederate {
         kolejka.setIdKolejki(idKolejki);
         kolejka.setIdKasy(idKolejki);
         kolejka.setSredniCzasObslugi(rand.nextInt(10 + 1) + 1);
-        kolejka.setListaKlientow(new HashMap<>());
+        kolejka.setListaKlientow(new LinkedList<>());
 
         Interfejs.getInstance().getWszystkieKolejki().put(kolejka.getIdKolejki(), kolejka);
+
+        try {
+            otworzKaseInteraction(idKolejki, false, kolejka.getSredniCzasObslugi());
+        } catch (RTIexception e) {
+            logger.info("[OtworzKase] RTIException, nie można otworzyć kasy");
+        }
 
         logger.info(String.format("Otworzono kolejkę o id: %s, suma otwartych kolejek w sklepie: %s", idKolejki, Interfejs.getInstance().getWszystkieKolejki().size()));
     }
@@ -268,7 +305,8 @@ public class KolejkaFederate {
             kolejka = Interfejs.getInstance().getNajkrotszaKolejka();
         }
 
-        kolejka.getListaKlientow().put(klient.getIdKlient(), klient);
+        kolejka.getListaKlientow().add(klient);
+        Interfejs.getInstance().getWszystkieKolejki().put(kolejka.getIdKolejki(), kolejka);
 
         logger.info(String.format("[KlientDoKolejkiReceived] Klient %s dołączył do kolejki %s. Suma klientów w kolejce: %s",
                 klient.getIdKlient(),
@@ -288,14 +326,16 @@ public class KolejkaFederate {
         // PUBLISHED
         otworzKaseInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.OtworzKase");
         idKasyOtworzHandle = rtiamb.getParameterHandle(otworzKaseInteractionHandle, "idKasy");
-        idKolejkiOtworzHandle = rtiamb.getParameterHandle(otworzKaseInteractionHandle, "idKolejki");
+        uprzywilejowanaOtworzHandle = rtiamb.getParameterHandle(otworzKaseInteractionHandle, "uprzywilejowana");
+        czasObslugiHandle = rtiamb.getParameterHandle(otworzKaseInteractionHandle, "czasObslugi");
 
         zamknijKaseInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.ZamknijKase");
         idKasyZamknijHandle = rtiamb.getParameterHandle(zamknijKaseInteractionHandle, "idKasy");
 
-        nastepnyKlientInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.NastepnyKlient");
-        idKlientaNastepnyHandle = rtiamb.getParameterHandle(nastepnyKlientInteractionHandle, "idKlient");
-        idKasyNastepnyHandle = rtiamb.getParameterHandle(nastepnyKlientInteractionHandle, "idKasy");
+        klientDoKasyInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.KlientDoKasy");
+        idKlientaDoKasyHandle = rtiamb.getParameterHandle(klientDoKasyInteractionHandle, "idKlient");
+        idKasyDoKasyHandle = rtiamb.getParameterHandle(klientDoKasyInteractionHandle, "idKasy");
+        iloscProduktowDoKasyHandle = rtiamb.getParameterHandle(klientDoKasyInteractionHandle, "iloscProduktow");
 
         // SUBSCRIBED
         otworzKolejkeInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.OtworzKolejke");
@@ -304,6 +344,10 @@ public class KolejkaFederate {
         zamknijKolejkeInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.ZamknijKolejke");
         idKolejkiZamknijHandle = rtiamb.getParameterHandle(zamknijKolejkeInteractionHandle, "idKolejki");
 
+        koniecZakupowInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.KoniecZakupow");
+        idKlientaKoniecHandle = rtiamb.getParameterHandle(koniecZakupowInteractionHandle, "idKlient");
+        idKasyKoniecHandle = rtiamb.getParameterHandle(koniecZakupowInteractionHandle, "idKasy");
+
         klientDoKolejkiInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.KlientDoKolejki");
         iloscProduktowHandle = rtiamb.getParameterHandle(klientDoKolejkiInteractionHandle, "iloscProduktow");
         idKlientaKolejkiHandle = rtiamb.getParameterHandle(klientDoKolejkiInteractionHandle, "idKlient");
@@ -311,20 +355,23 @@ public class KolejkaFederate {
 
         rtiamb.publishInteractionClass(otworzKaseInteractionHandle);
         rtiamb.publishInteractionClass(zamknijKaseInteractionHandle);
-        rtiamb.publishInteractionClass(nastepnyKlientInteractionHandle);
+        rtiamb.publishInteractionClass(klientDoKasyInteractionHandle);
 
         rtiamb.subscribeInteractionClass(otworzKolejkeInteractionHandle);
+        rtiamb.subscribeInteractionClass(koniecZakupowInteractionHandle);
         rtiamb.subscribeInteractionClass(zamknijKaseInteractionHandle);
         rtiamb.subscribeInteractionClass(klientDoKolejkiInteractionHandle);
     }
 
-    private void otworzKaseInteraction() throws RTIexception {
-        String kasaKolejkaId = UUIDUtils.shortId();
+    private void otworzKaseInteraction(String kasaKolejkaId, boolean uprzywilejowana, int czasObslugi) throws RTIexception {
         HLAunicodeString kasaKolejkaIdValue = encoder.createHLAunicodeString(kasaKolejkaId);
+        HLAboolean uprzywilejowanaValue = encoder.createHLAboolean(uprzywilejowana);
+        HLAinteger32BE czasObslugiValue = encoder.createHLAinteger32BE(czasObslugi);
 
         ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(0);
         parameters.put(idKasyOtworzHandle, kasaKolejkaIdValue.toByteArray());
-        parameters.put(idKolejkiOtworzHandle, kasaKolejkaIdValue.toByteArray());
+        parameters.put(uprzywilejowanaOtworzHandle, uprzywilejowanaValue.toByteArray());
+        parameters.put(czasObslugiHandle, czasObslugiValue.toByteArray());
 
         double newTimeDouble = fedamb.federateTime + fedamb.federateLookahead;
         LogicalTime time = TimeUtils.convertTime(newTimeDouble);
@@ -332,6 +379,24 @@ public class KolejkaFederate {
         logger.info(String.format("[OtworzKaseInteraction] Send interaction, kasaId and kolejkaId: %s [TIME: %.1f]", kasaKolejkaId, newTimeDouble));
 
         rtiamb.sendInteraction(otworzKaseInteractionHandle, parameters, generateTag(), time);
+    }
+
+    private void klientDoKasyInteraction(String idKasy, String idKlient, int iloscProduktow) throws RTIexception {
+        HLAunicodeString idKasyValue = encoder.createHLAunicodeString(idKasy);
+        HLAunicodeString idKlientValue = encoder.createHLAunicodeString(idKlient);
+        HLAinteger32BE iloscProduktowValue = encoder.createHLAinteger32BE(iloscProduktow);
+
+        ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(0);
+        parameters.put(idKasyDoKasyHandle, idKasyValue.toByteArray());
+        parameters.put(idKlientaDoKasyHandle, idKlientValue.toByteArray());
+        parameters.put(iloscProduktowDoKasyHandle, iloscProduktowValue.toByteArray());
+
+        double newTimeDouble = fedamb.federateTime + fedamb.federateLookahead;
+        LogicalTime time = TimeUtils.convertTime(newTimeDouble);
+
+        logger.info(String.format("[KlientDoKasyInteraction] Send interaction, kasaId: %s and klientId: %s [TIME: %.1f]", idKasy,  idKlient,  newTimeDouble));
+
+        rtiamb.sendInteraction(klientDoKasyInteractionHandle, parameters, generateTag(), time);
     }
 
     //----------------------------------------------------------

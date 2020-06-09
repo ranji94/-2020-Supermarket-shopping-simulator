@@ -8,6 +8,7 @@ public class Interfejs {
     private int maxDlugoscKolejki;
     private int liczbaOtwartychKas;
     private Map<String, Kolejka> wszystkieKolejki = new HashMap<>();
+    private Map<String, Kasa> wszystkieKasy = new HashMap<>();
     private int sredniCzasObslugiKolejki;
 
     private static Interfejs INSTANCE;
@@ -66,5 +67,13 @@ public class Interfejs {
 
     public void setSredniCzasObslugiKolejki(int sredniCzasObslugiKolejki) {
         this.sredniCzasObslugiKolejki = sredniCzasObslugiKolejki;
+    }
+
+    public Map<String, Kasa> getWszystkieKasy() {
+        return wszystkieKasy;
+    }
+
+    public void setWszystkieKasy(Map<String, Kasa> wszystkieKasy) {
+        this.wszystkieKasy = wszystkieKasy;
     }
 }

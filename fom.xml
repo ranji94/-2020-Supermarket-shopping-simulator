@@ -128,10 +128,6 @@
                     <name>sredniCzasObslugi</name>
                     <dataType>HLAinteger32BE</dataType>
                 </parameter>
-                <parameter>
-                    <name>listaKlientow</name>
-                    <dataType>HLAvariableArray</dataType>
-                </parameter>
             </interactionClass>
 
             <interactionClass>
@@ -159,12 +155,12 @@
                     <dataType>HLAunicodeString</dataType>
                 </parameter>
                 <parameter>
-                    <name>idKolejki</name>
-                    <dataType>HLAunicodeString</dataType>
-                </parameter>
-                <parameter>
                     <name>uprzywilejowana</name>
                     <dataType>HLAboolean</dataType>
+                </parameter>
+                <parameter>
+                    <name>czasObslugi</name>
+                    <dataType>HLAinteger32BE</dataType>
                 </parameter>
             </interactionClass>
 
@@ -176,12 +172,12 @@
                 <order>TimeStamp</order>
                 <semantics></semantics>
                 <parameter>
-                    <name>idKlienta</name>
+                    <name>idKlient</name>
                     <dataType>HLAunicodeString</dataType>
                 </parameter>
                 <parameter>
-                    <name>iloscProduktow</name>
-                    <dataType>HLAinteger32BE</dataType>
+                    <name>idKasy</name>
+                    <dataType>HLAunicodeString</dataType>
                 </parameter>
             </interactionClass>
 
@@ -229,7 +225,7 @@
             </interactionClass>
 
             <interactionClass>
-                <name>NastepnyKlient</name>
+                <name>KlientDoKasy</name>
                 <sharing>PublishSubscribe</sharing>
                 <dimensions/>
                 <transportation>HLAreliable</transportation>
@@ -242,6 +238,10 @@
                 <parameter>
                     <name>idKasy</name>
                     <dataType>HLAunicodeString</dataType>
+                </parameter>
+                <parameter>
+                    <name>iloscProduktow</name>
+                    <dataType>HLAinteger32BE</dataType>
                 </parameter>
             </interactionClass>
 

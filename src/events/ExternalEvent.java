@@ -18,7 +18,7 @@ public class ExternalEvent<T> {
         KLIENT_DO_KOLEJKI,
         OTWORZ_KOLEJKE,
         ZAMKNIJ_KOLEJKE,
-        NASTEPNY_KLIENT,
+        KLIENT_DO_KASY,
         STOP_SIMULATION
     }
 
