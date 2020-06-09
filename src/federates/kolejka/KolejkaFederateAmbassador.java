@@ -115,6 +115,17 @@ public class KolejkaFederateAmbassador extends NullFederateAmbassador {
 
             externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.KLIENT_DO_KOLEJKI, receiveTime));
         }
+
+        if (interactionClass.equals(federate.koniecZakupowInteractionHandle)) {
+            double receiveTime = TimeUtils.convertTime(time);
+            logger.info(String.format("Receive interaction KoniecZakupow [TIME:%.1f]", receiveTime));
+            String idKlient = encoder.toString(theParameters.get(federate.idKlientaKoniecHandle));
+            String idKasy = encoder.toString(theParameters.get(federate.idKasyKoniecHandle));
+
+            Object [] data = { idKlient, idKasy };
+
+            externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.KONIEC_ZAKUPOW, receiveTime));
+        }
     }
 
     @Override

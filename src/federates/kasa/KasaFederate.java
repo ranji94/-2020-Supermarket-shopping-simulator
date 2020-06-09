@@ -1,7 +1,11 @@
-package federates.klient;
+package federates.kasa;
 
-import federates.sklep.SklepFederate;
+import entity.Interfejs;
+import entity.Kasa;
+import entity.Sklep;
+import events.ExternalEvent;
 import hla.rti1516e.*;
+import hla.rti1516e.encoding.HLAinteger32BE;
 import hla.rti1516e.encoding.HLAunicodeString;
 import hla.rti1516e.exceptions.FederatesCurrentlyJoined;
 import hla.rti1516e.exceptions.FederationExecutionAlreadyExists;
@@ -16,27 +20,34 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Random;
 
-public class KlientFederate {
-    private static final Logger logger = new Logger("KlientFederate");
+public class KasaFederate {
+    private static final Logger logger = new Logger("KasaFederate");
 
     public static final String READY_TO_RUN = "ReadyToRun";
 
     private RTIambassador rtiamb;
-    private KlientFederateAmbassador fedamb;
+    private KasaFederateAmbassador fedamb;
     protected EncoderDecoder encoder;
 
-    // Interactions
-    protected InteractionClassHandle klientWchodziInteractionHandle;
-    protected ParameterHandle idKlientaHandle;
+    // SUBSCRIBED Interactions
+    protected InteractionClassHandle otworzKaseInteractionHandle;
+    protected ParameterHandle idKasyHandle;
+    protected ParameterHandle uprzywilejowanaHandle;
+    protected ParameterHandle czasObslugiHandle;
 
-    protected InteractionClassHandle zwrocenieLiczbyProduktowHandle;
-    protected ParameterHandle idKlientaZwrocenieHandle;
-    protected ParameterHandle iloscProduktowHandle;
+    protected InteractionClassHandle klientDoKasyInteractionHandle;
+    protected ParameterHandle idKlientaDoKasyHandle;
+    protected ParameterHandle idKasyDoKasyHandle;
+    protected ParameterHandle iloscProduktowDoKasyHandle;
 
-    protected InteractionClassHandle stopSimulationInteractionHandle;
+    // PUBLISHED Interactions
+    protected InteractionClassHandle koniecZakupowInteractionHandle;
+    protected ParameterHandle idKlientaKoniecHandle;
+    protected ParameterHandle idKasyKoniecHandle;
+    ////////////////////////////////////////////////////
 
-    private int clientsEnteredShop = 0;
     private boolean sklepIsOpen = true;
+    private int sumaWszystkichZakupionychProduktow = 0;
 
     private void waitForUser()
     {
@@ -62,7 +73,7 @@ public class KlientFederate {
 
         // connect
         logger.info( "Connecting..." );
-        fedamb = new KlientFederateAmbassador( this );
+        fedamb = new KasaFederateAmbassador( this );
         rtiamb.connect( fedamb, CallbackModel.HLA_EVOKED );
 
         // create federation
@@ -94,7 +105,7 @@ public class KlientFederate {
         };
 
         rtiamb.joinFederationExecution( federateName,
-                "KlientFederate",
+                "KasaFederate",
                 "SupermarketFederation",
                 joinModules );
 
@@ -195,69 +206,103 @@ public class KlientFederate {
             advanceTime(randomTime());
             if (Constants.LOG_TIME_ADVANCE) logger.info(String.format("Time Advanced to %.1f", fedamb.federateTime));
 
-            if(Constants.MAX_KLIENTOW_W_SKLEPIE > clientsEnteredShop) {
-                clientsEnteredShop++;
-                klientWchodziInteraction();
+            if(fedamb.getExternalEvents().size() > 0) {
+                fedamb.getExternalEvents().sort(new ExternalEvent.ExternalEventComparator());
+                for (ExternalEvent externalEvent : fedamb.getExternalEvents()) {
+                    switch (externalEvent.getEventType()) {
+                        case OTWORZ_KASE:
+                            Object [] otworzKaseData = (Object [])externalEvent.getData();
+                            otworzKaseInteractionReceived(otworzKaseData);
+                            break;
+                        case KLIENT_DO_KASY:
+                            Object [] klientDoKasyData = (Object [])externalEvent.getData();
+                            klientDoKasyInteractionReceived(klientDoKasyData);
+                            break;
+                    }
+                }
+                fedamb.getExternalEvents().clear();
             }
+
+
         }
-
-        stopSimulation();
     }
-
-
 
     private void publishAndSubscribe() throws RTIexception
     {
-        klientWchodziInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.KlientWchodzi");
-        idKlientaHandle = rtiamb.getParameterHandle(klientWchodziInteractionHandle, "idKlient");
+        //PUBLISHED DECLARATIONS
+        koniecZakupowInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.KoniecZakupow");
+        idKlientaKoniecHandle = rtiamb.getParameterHandle(koniecZakupowInteractionHandle, "idKlient");
+        idKasyKoniecHandle = rtiamb.getParameterHandle(koniecZakupowInteractionHandle, "idKasy");
 
-        zwrocenieLiczbyProduktowHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.ZwrocenieLiczbyProduktow");
-        idKlientaZwrocenieHandle = rtiamb.getParameterHandle(zwrocenieLiczbyProduktowHandle, "idKlient");
-        iloscProduktowHandle = rtiamb.getParameterHandle(zwrocenieLiczbyProduktowHandle, "iloscProduktow");
+        // SUBSCRIBED DECLARATIONS
+        otworzKaseInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.OtworzKase");
+        idKasyHandle = rtiamb.getParameterHandle(otworzKaseInteractionHandle, "idKasy");
+        uprzywilejowanaHandle = rtiamb.getParameterHandle(otworzKaseInteractionHandle, "uprzywilejowana");
+        czasObslugiHandle = rtiamb.getParameterHandle(otworzKaseInteractionHandle, "czasObslugi");
 
-        rtiamb.publishInteractionClass(klientWchodziInteractionHandle);
-        rtiamb.publishInteractionClass(zwrocenieLiczbyProduktowHandle);
+        klientDoKasyInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.KlientDoKasy");
+        idKlientaDoKasyHandle = rtiamb.getParameterHandle(klientDoKasyInteractionHandle, "idKlient");
+        idKasyDoKasyHandle = rtiamb.getParameterHandle(klientDoKasyInteractionHandle, "idKasy");
+        iloscProduktowDoKasyHandle = rtiamb.getParameterHandle(klientDoKasyInteractionHandle, "iloscProduktow");
+
+        // PUBLISHED
+        rtiamb.publishInteractionClass(koniecZakupowInteractionHandle);
+
+        // SUBSCRIBED
+        rtiamb.subscribeInteractionClass(otworzKaseInteractionHandle);
+        rtiamb.subscribeInteractionClass(klientDoKasyInteractionHandle);
     }
 
-    private void klientWchodziInteraction() throws RTIexception {
-        String klientId = UUIDUtils.shortId();
-        HLAunicodeString klientIdValue = encoder.createHLAunicodeString(klientId);
+    private void otworzKaseInteractionReceived(Object[] data) {
+        String idKasyIKolejki = (String) data[0];
+        boolean uprzywilejowana = (boolean) data[1];
+        int czasObslugi = (int) data[2];
 
-        ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(0);
-        parameters.put(idKlientaHandle, klientIdValue.toByteArray());
+        Kasa kasa = new Kasa(idKasyIKolejki, idKasyIKolejki, null, czasObslugi, uprzywilejowana);
+        Interfejs.getInstance().getWszystkieKasy().put(idKasyIKolejki, kasa);
 
-        double newTimeDouble = fedamb.federateTime + fedamb.federateLookahead;
-        LogicalTime time = TimeUtils.convertTime( newTimeDouble );
-
-        logger.info(String.format("[KlientWchodziInteraction] Send interaction, klientId: %s", klientId,  newTimeDouble));
-
-        rtiamb.sendInteraction(klientWchodziInteractionHandle, parameters, generateTag(), time);
+        logger.info(String.format("[OtworzKaseInteractionReceived] Otwarto Kase o ID: %s, uprzywilejowana: %s. Otwartych kas: %s",
+                idKasyIKolejki,
+                uprzywilejowana,
+                Interfejs.getInstance().getWszystkieKasy().size()));
     }
 
-    private void klientZwracaProduktInteraction(String klientId) throws RTIexception {
-        HLAunicodeString klientIdValue = encoder.createHLAunicodeString(klientId);
+    private void klientDoKasyInteractionReceived(Object[] data) {
+        Random rand = new Random();
+        String idKasy = (String) data[0];
+        String idKlient = (String) data[1];
+        sumaWszystkichZakupionychProduktow += (int) data[2];
+
+        Kasa kasa = Interfejs.getInstance().getWszystkieKasy().get(idKasy);
+        kasa.setIdAktualnyKlient(idKlient);
+        int czasObslugiNormalized = 11 - kasa.getCzasObslugi();
+        int randomValue = rand.nextInt(czasObslugiNormalized) + 1;
+
+        if(czasObslugiNormalized == randomValue) {
+            try {
+                koniecZakupowInteraction(idKlient, kasa.getIdKasy());
+            } catch (RTIexception e) {
+                logger.info("[KoniecZakupowInteraction] RTIException error");
+            }
+        }
+
+        logger.info(String.format("[KlientDoKasy] Klient %s dołączył do kasy %s. Kupionych w sumie produktów: %s", idKlient, idKasy, sumaWszystkichZakupionychProduktow));
+    }
+
+    private void koniecZakupowInteraction(String idKlient, String idKasy) throws RTIexception {
+        HLAunicodeString idKlientValue = encoder.createHLAunicodeString(idKlient);
+        HLAunicodeString idKasyValue = encoder.createHLAunicodeString(idKasy);
 
         ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(0);
-        parameters.put(idKlientaZwrocenieHandle, klientIdValue.toByteArray());
+        parameters.put(idKlientaKoniecHandle, idKlientValue.toByteArray());
+        parameters.put(idKasyKoniecHandle, idKasyValue.toByteArray());
 
         double newTimeDouble = fedamb.federateTime + fedamb.federateLookahead;
         LogicalTime time = TimeUtils.convertTime(newTimeDouble);
 
-        logger.info(String.format("[KlientZwracaProduktInteraction] Send interaction, klientId: %s [TIME: %.1f]", klientId, newTimeDouble));
+        logger.info(String.format("[KoniecZakupowInteraction] Send interaction klientId: %s [TIME: %.1f]", idKlient,  newTimeDouble));
 
-        rtiamb.sendInteraction(zwrocenieLiczbyProduktowHandle, parameters, generateTag(), time);
-    }
-
-    private void stopSimulation() throws RTIexception {
-
-        ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(0);
-
-        double newTimeDouble = fedamb.federateTime + fedamb.federateLookahead;
-        LogicalTime time = TimeUtils.convertTime(newTimeDouble);
-
-        logger.info(String.format("[StopSimulationInteraction] Send interaction [TIME: %.1f]", newTimeDouble));
-
-        rtiamb.sendInteraction(stopSimulationInteractionHandle, parameters, generateTag(), time);
+        rtiamb.sendInteraction(koniecZakupowInteractionHandle, parameters, generateTag(), time);
     }
 
     //----------------------------------------------------------
@@ -265,13 +310,13 @@ public class KlientFederate {
     //----------------------------------------------------------
     public static void main( String[] args )
     {
-        String federateName = "KlientFederate";
+        String federateName = "KasaFederate";
         if( args.length != 0 ) {
             federateName = args[0];
         }
 
         try {
-            new KlientFederate().runFederate( federateName );
+            new KasaFederate().runFederate( federateName );
         }
         catch( Exception rtie ) {
             rtie.printStackTrace();

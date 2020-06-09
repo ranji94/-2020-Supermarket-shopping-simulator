@@ -1,46 +1,49 @@
 package entity;
 
 public class Kasa {
-    private int idKasy;
-    private int idKolejki;
-    private int idAktualnyKlient;
+    private String idKasy;
+    private String idKolejki;
+    private String idAktualnyKlient;
+    private int czasObslugi;
     private boolean uprzywilejowana;
 
-    public Kasa(int idKasy, int idKolejki, int idAktualnyKlient, boolean uprzywilejowana) {
+    public Kasa(String idKasy, String idKolejki, String idAktualnyKlient, int czasObslugi, boolean uprzywilejowana) {
         this.idKasy = idKasy;
         this.idKolejki = idKolejki;
         this.idAktualnyKlient = idAktualnyKlient;
+        this.czasObslugi = czasObslugi;
         this.uprzywilejowana = uprzywilejowana;
     }
 
-    public Kasa(int idKasy, int idKolejki, int idAktualnyKlient) {
-        this.idKasy = idKasy;
-        this.idKolejki = idKolejki;
-        this.idAktualnyKlient = idAktualnyKlient;
-        this.uprzywilejowana = false;
+    public int getCzasObslugi() {
+        return czasObslugi;
     }
 
-    public int getIdKasy() {
+    public void setCzasObslugi(int czasObslugi) {
+        this.czasObslugi = czasObslugi;
+    }
+
+    public String getIdKasy() {
         return idKasy;
     }
 
-    public void setIdKasy(int idKasy) {
+    public void setIdKasy(String idKasy) {
         this.idKasy = idKasy;
     }
 
-    public int getIdKolejki() {
+    public String getIdKolejki() {
         return idKolejki;
     }
 
-    public void setIdKolejki(int idKolejki) {
+    public void setIdKolejki(String idKolejki) {
         this.idKolejki = idKolejki;
     }
 
-    public int getIdAktualnyKlient() {
+    public String getIdAktualnyKlient() {
         return idAktualnyKlient;
     }
 
-    public void setIdAktualnyKlient(int idAktualnyKlient) {
+    public void setIdAktualnyKlient(String idAktualnyKlient) {
         this.idAktualnyKlient = idAktualnyKlient;
     }
 

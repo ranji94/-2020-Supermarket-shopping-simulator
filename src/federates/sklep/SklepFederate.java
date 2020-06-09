@@ -46,13 +46,13 @@ public class SklepFederate {
     protected ParameterHandle idKlientaKolejkiHandle;
     protected ParameterHandle iloscProduktowDoKolejkiHandle;
 
-    protected InteractionClassHandle koniecZakupowInteractionHandle;
-    protected ParameterHandle idKlientaKoniecHandle;
-    protected ParameterHandle iloscProduktowHandle;
-
     //Subscribed Interactions
     protected InteractionClassHandle klientWchodziInteractionHandle;
     protected ParameterHandle idKlientWchodziHandle;
+
+    protected InteractionClassHandle koniecZakupowInteractionHandle;
+    protected ParameterHandle idKlientaKoniecHandle;
+    protected ParameterHandle idKasyKoniecHandle;
 
     protected InteractionClassHandle stopSimulationInteractionHandle;
 
@@ -69,8 +69,10 @@ public class SklepFederate {
     private void run() throws RTIexception {
         while (!stopSimulation) {
             Sklep sklep = Sklep.getInstance();
-            logger.info(String.format("[SklepFederate] Wszyscy klienci w sklepie: %s",
-                    sklep.getSumaWszystkichKlientow()));
+            logger.info(String.format("[SklepFederate] Wszyscy klienci w sklepie: %s, klienci w kolejkach: %s, klienci na zakupach: %s",
+                    sklep.getSumaWszystkichKlientow(),
+                    sklep.getSumaKlientowKolejka(),
+                    sklep.getSumaKlientowNaZakupach()));
             boolean isClientsInShop = sklep.getSumaWszystkichKlientow() > 0;
 
             advanceTime(Constants.TIME_STEP);
@@ -86,6 +88,10 @@ public class SklepFederate {
                                 klientWchodziReceived(klientId);
                             }
                             break;
+                        case KONIEC_ZAKUPOW:
+                            Object [] koniecZakupowData = (Object [])externalEvent.getData();
+                            koniecZakupowInteractionReceived(koniecZakupowData);
+                            break;
                     }
                 }
                 fedamb.getExternalEvents().clear();
@@ -95,11 +101,13 @@ public class SklepFederate {
                 Random rand = new Random();
                 int coKtoryKlientKonczyZakupy = Math.round(1 / Constants.PRAWDOPODOBIENSTWO_ZAKONCZENIA_ZAKUPOW);
                 int randomValue = rand.nextInt(coKtoryKlientKonczyZakupy) + 1;
-                List<String> allClientIds = new ArrayList<>(sklep.getWszyscyKlienciWSklepie().keySet());
+                List<String> clientsInShoppingIds = new ArrayList<>(sklep.getKlienciNaZakupach().keySet());
 
-                if (coKtoryKlientKonczyZakupy == randomValue) {
-                    String wylosowanyKlientId = allClientIds.get(rand.nextInt(allClientIds.size()));
-                    logger.info(String.format("Wylosowano klienta o ID: %s", wylosowanyKlientId));
+                if (coKtoryKlientKonczyZakupy == randomValue && clientsInShoppingIds.size() > 0) {
+                    String wylosowanyKlientId = clientsInShoppingIds.get(rand.nextInt(clientsInShoppingIds.size()));
+                    logger.info(String.format("Klient o ID: %s zdecydował się ustawić w kolejce", wylosowanyKlientId));
+                    Sklep.getInstance().getKlienciWKolejkach().put(wylosowanyKlientId, Sklep.getInstance().getWszyscyKlienciWSklepie().get(wylosowanyKlientId));
+                    Sklep.getInstance().getKlienciNaZakupach().remove(wylosowanyKlientId);
 
                     if(!kolejkaPoczatkowaIstnieje) {
                         String idKolejki = UUIDUtils.shortId();
@@ -111,6 +119,16 @@ public class SklepFederate {
                 }
             }
         }
+    }
+
+    private void koniecZakupowInteractionReceived(Object [] data) {
+        String idKlient = (String) data[0];
+
+        Sklep.getInstance().getKlienciNaZakupach().remove(idKlient);
+        Sklep.getInstance().getKlienciWKolejkach().remove(idKlient);
+        Sklep.getInstance().getWszyscyKlienciWSklepie().remove(idKlient);
+
+        logger.info(String.format("[KoniecZakupow] Klient %s zakończył zakupy i wyszedł ze sklepu.", idKlient));
     }
 
     private void klientWchodziReceived(String klientId) {
@@ -133,6 +151,7 @@ public class SklepFederate {
         logger.info(String.format("[KlientWchodziReceived] Utworzono klienta: %s", klient.toString()));
 
         Sklep.getInstance().getWszyscyKlienciWSklepie().put(klient.getIdKlient(), klient);
+        Sklep.getInstance().getKlienciNaZakupach().put(klient.getIdKlient(), klient);
     }
 
     private void publishAndSubscribe() throws RTIexception
@@ -152,9 +171,13 @@ public class SklepFederate {
         klientWchodziInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.KlientWchodzi");
         idKlientWchodziHandle = rtiamb.getParameterHandle(klientWchodziInteractionHandle, "idKlient");
 
+        koniecZakupowInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.KoniecZakupow");
+        idKlientaKoniecHandle = rtiamb.getParameterHandle(koniecZakupowInteractionHandle, "idKlient");
+        idKasyKoniecHandle = rtiamb.getParameterHandle(koniecZakupowInteractionHandle, "idKasy");
         //////////////////////////////////////////////////////////////
 
         rtiamb.subscribeInteractionClass(klientWchodziInteractionHandle);
+        rtiamb.subscribeInteractionClass(koniecZakupowInteractionHandle);
 
         rtiamb.publishInteractionClass(otworzKolejkeInteractionHandle);
         rtiamb.publishInteractionClass(zamknijKolejkeInteractionHandle);
