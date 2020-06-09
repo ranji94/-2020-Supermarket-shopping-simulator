@@ -59,7 +59,6 @@ public class Kolejka {
                 "idKolejki='" + idKolejki + '\'' +
                 ", idKasy='" + idKasy + '\'' +
                 ", sredniCzasObslugi=" + sredniCzasObslugi +
-                ", listaKlientow=" + listaKlientow +
                 '}';
     }
 }

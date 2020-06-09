@@ -224,7 +224,8 @@ public class KolejkaFederate {
                             otworzKolejkeReceived(kolejkaId);
                             break;
                         case ZAMKNIJ_KOLEJKE:
-                            zamknijKolejkeReceived();
+                            String kolejkaId2 = (String) externalEvent.getData();
+                            zamknijKolejkeReceived(kolejkaId2);
                             break;
                         case KLIENT_DO_KOLEJKI:
                             Object [] data = (Object [])externalEvent.getData();
@@ -251,7 +252,7 @@ public class KolejkaFederate {
         logger.info(String.format("Otworzono kolejkę o id: %s, suma otwartych kolejek w sklepie: %s", idKolejki, Interfejs.getInstance().getWszystkieKolejki().size()));
     }
 
-    private void zamknijKolejkeReceived() {
+    private void zamknijKolejkeReceived(String idKolejki) {
 
     }
 
@@ -284,7 +285,7 @@ public class KolejkaFederate {
 
     private void publishAndSubscribe() throws RTIexception
     {
-        // PUBISHED
+        // PUBLISHED
         otworzKaseInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.OtworzKase");
         idKasyOtworzHandle = rtiamb.getParameterHandle(otworzKaseInteractionHandle, "idKasy");
         idKolejkiOtworzHandle = rtiamb.getParameterHandle(otworzKaseInteractionHandle, "idKolejki");
