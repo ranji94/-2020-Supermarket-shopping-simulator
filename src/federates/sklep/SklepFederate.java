@@ -14,8 +14,6 @@ import hla.rti1516e.exceptions.FederationExecutionDoesNotExist;
 import hla.rti1516e.exceptions.RTIexception;
 
 import events.ExternalEvent;
-import repository.SklepRepository;
-import repository.SklepRepositoryImpl;
 import utils.*;
 
 import java.io.BufferedReader;
@@ -36,7 +34,6 @@ public class SklepFederate {
     private RTIambassador rtiamb;
     private SklepFederateAmbassador fedamb;
     protected EncoderDecoder encoder;
-    SklepRepository sklepRepository = new SklepRepositoryImpl();
 
     //Published Interactions
     protected InteractionClassHandle otworzKolejkeInteractionHandle;
@@ -47,7 +44,7 @@ public class SklepFederate {
 
     protected InteractionClassHandle klientDoKolejkiInteractionHandle;
     protected ParameterHandle idKlientaKolejkiHandle;
-    protected ParameterHandle idKolejkiKlientHandle;
+    protected ParameterHandle iloscProduktowDoKolejkiHandle;
 
     protected InteractionClassHandle koniecZakupowInteractionHandle;
     protected ParameterHandle idKlientaKoniecHandle;
@@ -72,11 +69,9 @@ public class SklepFederate {
     private void run() throws RTIexception {
         while (!stopSimulation) {
             Sklep sklep = Sklep.getInstance();
-            logger.info(String.format("[SklepFederate] Wszyscy klienci w sklepie: %s, klienci na zakupach: %s, klienci w kolejkach: %s",
-                    sklep.getSumaWszystkichKlientow(),
-                    sklep.getSumaKlientowZakupy(),
-                    sklep.getSumaKlientowKolejka()));
-            boolean isClientsInShop = sklep.getWszyscyKlienciWSklepie().size() > 0;
+            logger.info(String.format("[SklepFederate] Wszyscy klienci w sklepie: %s",
+                    sklep.getSumaWszystkichKlientow()));
+            boolean isClientsInShop = sklep.getSumaWszystkichKlientow() > 0;
 
             advanceTime(Constants.TIME_STEP);
             if (Constants.LOG_TIME_ADVANCE) logger.info(String.format("Time Advanced to %.1f", fedamb.federateTime));
@@ -86,7 +81,7 @@ public class SklepFederate {
                 for (ExternalEvent externalEvent : fedamb.getExternalEvents()) {
                     switch (externalEvent.getEventType()) {
                         case KLIENT_WCHODZI:
-                            if(Sklep.getInstance().getWszyscyKlienciWSklepie().size() < Constants.MAX_KLIENTOW_W_SKLEPIE) {
+                            if(Sklep.getInstance().getSumaWszystkichKlientow() < Constants.MAX_KLIENTOW_W_SKLEPIE) {
                                 String klientId = (String) externalEvent.getData();
                                 klientWchodziReceived(klientId);
                             }
@@ -100,7 +95,7 @@ public class SklepFederate {
                 Random rand = new Random();
                 int coKtoryKlientKonczyZakupy = Math.round(1 / Constants.PRAWDOPODOBIENSTWO_ZAKONCZENIA_ZAKUPOW);
                 int randomValue = rand.nextInt(coKtoryKlientKonczyZakupy) + 1;
-                List<String> allClientIds = new ArrayList<>(Sklep.getInstance().getWszyscyKlienciWSklepie().keySet());
+                List<String> allClientIds = new ArrayList<>(sklep.getWszyscyKlienciWSklepie().keySet());
 
                 if (coKtoryKlientKonczyZakupy == randomValue) {
                     String wylosowanyKlientId = allClientIds.get(rand.nextInt(allClientIds.size()));
@@ -112,7 +107,7 @@ public class SklepFederate {
                         kolejkaPoczatkowaIstnieje=true;
                     }
 
-                    klientDoKolejkiInteraction(wylosowanyKlientId);
+                    klientDoKolejkiInteraction(wylosowanyKlientId, Sklep.getInstance().getWszyscyKlienciWSklepie().get(wylosowanyKlientId).getIloscProduktow());
                 }
             }
         }
@@ -135,9 +130,9 @@ public class SklepFederate {
             klient.setIloscProduktow(rand.nextInt(5) + 1);
         }
 
-        logger.info(String.format("[KlientWchodziReceived] Utworzono klienta: %s, sklepRepositoryInerface: %s", klient.toString(), sklepRepository));
+        logger.info(String.format("[KlientWchodziReceived] Utworzono klienta: %s", klient.toString()));
 
-        sklepRepository.addClientToShop(klient);
+        Sklep.getInstance().getWszyscyKlienciWSklepie().put(klient.getIdKlient(), klient);
     }
 
     private void publishAndSubscribe() throws RTIexception
@@ -150,7 +145,7 @@ public class SklepFederate {
         idKolejkiZamknijHandle = rtiamb.getParameterHandle(zamknijKolejkeInteractionHandle, "idKolejki");
 
         klientDoKolejkiInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.KlientDoKolejki");
-        idKolejkiKlientHandle = rtiamb.getParameterHandle(klientDoKolejkiInteractionHandle, "idKolejki");
+        iloscProduktowDoKolejkiHandle = rtiamb.getParameterHandle(klientDoKolejkiInteractionHandle, "iloscProduktow");
         idKlientaKolejkiHandle = rtiamb.getParameterHandle(klientDoKolejkiInteractionHandle, "idKlient");
 
         //SUBSCRIBED
@@ -166,11 +161,13 @@ public class SklepFederate {
         rtiamb.publishInteractionClass(klientDoKolejkiInteractionHandle);
     }
 
-    private void klientDoKolejkiInteraction(String klientId) throws RTIexception {
+    private void klientDoKolejkiInteraction(String klientId, int iloscProduktow) throws RTIexception {
         HLAunicodeString klientIdValue = encoder.createHLAunicodeString(klientId);
+        HLAinteger32BE iloscProduktowValue = encoder.createHLAinteger32BE(iloscProduktow);
 
         ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(0);
         parameters.put(idKlientaKolejkiHandle, klientIdValue.toByteArray());
+        parameters.put(iloscProduktowDoKolejkiHandle, iloscProduktowValue.toByteArray());
 
         double newTimeDouble = fedamb.federateTime + fedamb.federateLookahead;
         LogicalTime time = TimeUtils.convertTime(newTimeDouble);

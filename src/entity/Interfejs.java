@@ -1,11 +1,13 @@
 package entity;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Interfejs {
     private int maxDlugoscKolejki;
     private int liczbaOtwartychKas;
-    private List<Integer> liczbaOsobKolejki;
+    private Map<String, Kolejka> wszystkieKolejki = new HashMap<>();
     private int sredniCzasObslugiKolejki;
 
     private static Interfejs INSTANCE;
@@ -36,12 +38,26 @@ public class Interfejs {
         this.liczbaOtwartychKas = liczbaOtwartychKas;
     }
 
-    public List<Integer> getLiczbaOsobKolejki() {
-        return liczbaOsobKolejki;
+    public Map<String, Kolejka> getWszystkieKolejki() {
+        return wszystkieKolejki;
     }
 
-    public void setLiczbaOsobKolejki(List<Integer> liczbaOsobKolejki) {
-        this.liczbaOsobKolejki = liczbaOsobKolejki;
+    public Kolejka getNajkrotszaKolejka() {
+        int shortestQueueLong = Integer.MAX_VALUE;
+        Kolejka najkrotsza = null;
+
+        for(Map.Entry<String, Kolejka> q : wszystkieKolejki.entrySet()) {
+            if(q.getValue().getDlugoscKolejki() < shortestQueueLong) {
+                shortestQueueLong = q.getValue().getDlugoscKolejki();
+                najkrotsza = q.getValue();
+            }
+        }
+
+        return najkrotsza;
+    }
+
+    public void setWszystkieKolejki(Map<String, Kolejka> wszystkieKolejki) {
+        this.wszystkieKolejki = wszystkieKolejki;
     }
 
     public int getSredniCzasObslugiKolejki() {
@@ -50,13 +66,5 @@ public class Interfejs {
 
     public void setSredniCzasObslugiKolejki(int sredniCzasObslugiKolejki) {
         this.sredniCzasObslugiKolejki = sredniCzasObslugiKolejki;
-    }
-
-    public static Interfejs getINSTANCE() {
-        return INSTANCE;
-    }
-
-    public static void setINSTANCE(Interfejs INSTANCE) {
-        Interfejs.INSTANCE = INSTANCE;
     }
 }

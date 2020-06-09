@@ -1,5 +1,6 @@
 package federates.kolejka;
 
+import entity.Interfejs;
 import entity.Klient;
 import entity.Kolejka;
 import entity.Sklep;
@@ -10,8 +11,6 @@ import hla.rti1516e.exceptions.FederatesCurrentlyJoined;
 import hla.rti1516e.exceptions.FederationExecutionAlreadyExists;
 import hla.rti1516e.exceptions.FederationExecutionDoesNotExist;
 import hla.rti1516e.exceptions.RTIexception;
-import repository.SklepRepository;
-import repository.SklepRepositoryImpl;
 import utils.*;
 
 import java.io.BufferedReader;
@@ -29,7 +28,7 @@ public class KolejkaFederate {
     private RTIambassador rtiamb;
     private KolejkaFederateAmbassador fedamb;
     protected EncoderDecoder encoder;
-    SklepRepository sklepRepository = new SklepRepositoryImpl();
+    Map<String, Kolejka> klienciWKolejce;
 
     // Interactions Published
     protected InteractionClassHandle otworzKaseInteractionHandle;
@@ -53,7 +52,7 @@ public class KolejkaFederate {
 
     protected InteractionClassHandle klientDoKolejkiInteractionHandle;
     protected ParameterHandle idKlientaKolejkiHandle;
-    protected ParameterHandle idKolejkiKlientHandle;
+    protected ParameterHandle iloscProduktowHandle;
 
     /////////////////////////////////////////////////
 
@@ -228,8 +227,8 @@ public class KolejkaFederate {
                             zamknijKolejkeReceived();
                             break;
                         case KLIENT_DO_KOLEJKI:
-                            String klientId = (String) externalEvent.getData();
-                            klientDoKolejkiReceived(klientId);
+                            Object [] data = (Object [])externalEvent.getData();
+                            klientDoKolejkiReceived(data);
                             break;
                     }
                 }
@@ -240,32 +239,47 @@ public class KolejkaFederate {
 
     private void otworzKolejkeReceived(String idKolejki) {
         Random rand = new Random();
-        Sklep sklep = Sklep.getInstance();
 
         Kolejka kolejka = new Kolejka();
         kolejka.setIdKolejki(idKolejki);
         kolejka.setIdKasy(idKolejki);
         kolejka.setSredniCzasObslugi(rand.nextInt(10 + 1) + 1);
-        kolejka.setListaKlientow(new ArrayList<>());
+        kolejka.setListaKlientow(new HashMap<>());
 
-        Map<String, Kolejka> kolejki = sklep.getWszystkieKolejkiWSklepie();
-        kolejki.put(kolejka.getIdKolejki(), kolejka);
-        sklep.setWszystkieKolejkiWSklepie(kolejki);
+        Interfejs.getInstance().getWszystkieKolejki().put(kolejka.getIdKolejki(), kolejka);
 
-        logger.info(String.format("Otworzono kolejkę o id: %s, suma otwartych kolejek w sklepie: %s", idKolejki, sklep.getWszystkieKolejkiWSklepie().size()));
+        logger.info(String.format("Otworzono kolejkę o id: %s, suma otwartych kolejek w sklepie: %s", idKolejki, Interfejs.getInstance().getWszystkieKolejki().size()));
     }
 
     private void zamknijKolejkeReceived() {
 
     }
 
-    private void klientDoKolejkiReceived(String idKlient) {
-        Klient klient = sklepRepository.findClientById(idKlient);
-        Kolejka najkrotszaKolejka = sklepRepository.findShortestQueue();
+    private void klientDoKolejkiReceived(Object[] data) {
+        String idKlienta = (String) data[0];
+        int iloscProduktow = (int) data[1];
+        Kolejka kolejka = Interfejs.getInstance().getNajkrotszaKolejka();
+        Klient klient = new Klient(idKlienta, iloscProduktow, false);
 
-        sklepRepository.addClientToQueue(klient, najkrotszaKolejka);
+        if(kolejka.getDlugoscKolejki() >= Constants.MAX_DLUGOSC_KOLEJKI) {
+            String idNowejKolejki = UUIDUtils.shortId();
+            otworzKolejkeReceived(idNowejKolejki);
+            kolejka = Interfejs.getInstance().getNajkrotszaKolejka();
+        }
 
-        logger.info(String.format("Klient %s, dołączył do kolejki %s. Suma klientów w kolejce: %s", idKlient, najkrotszaKolejka.toString(), Sklep.getInstance().getWszystkieKolejkiWSklepie().size()));
+        kolejka.getListaKlientow().put(klient.getIdKlient(), klient);
+
+        logger.info(String.format("[KlientDoKolejkiReceived] Klient %s dołączył do kolejki %s. Suma klientów w kolejce: %s",
+                klient.getIdKlient(),
+                kolejka.getIdKolejki(),
+                kolejka.getDlugoscKolejki()));
+
+        List<Integer> dlugosciWszystkichKolejek = new ArrayList<>();
+        for(Map.Entry<String, Kolejka> q : Interfejs.getInstance().getWszystkieKolejki().entrySet()) {
+            dlugosciWszystkichKolejek.add(q.getValue().getDlugoscKolejki());
+        }
+
+        logger.info(String.format("[KlientDoKolejkiReceived] Lista kolejek: %s", dlugosciWszystkichKolejek));
     }
 
     private void publishAndSubscribe() throws RTIexception
@@ -290,7 +304,7 @@ public class KolejkaFederate {
         idKolejkiZamknijHandle = rtiamb.getParameterHandle(zamknijKolejkeInteractionHandle, "idKolejki");
 
         klientDoKolejkiInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.KlientDoKolejki");
-        idKolejkiKlientHandle = rtiamb.getParameterHandle(klientDoKolejkiInteractionHandle, "idKolejki");
+        iloscProduktowHandle = rtiamb.getParameterHandle(klientDoKolejkiInteractionHandle, "iloscProduktow");
         idKlientaKolejkiHandle = rtiamb.getParameterHandle(klientDoKolejkiInteractionHandle, "idKlient");
         ////////////////////////////////////////
 

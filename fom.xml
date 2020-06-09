@@ -197,8 +197,8 @@
                     <dataType>HLAunicodeString</dataType>
                 </parameter>
                 <parameter>
-                    <name>idKolejki</name>
-                    <dataType>HLAunicodeString</dataType>
+                    <name>iloscProduktow</name>
+                    <dataType>HLAinteger32BE</dataType>
                 </parameter>
             </interactionClass>
 
