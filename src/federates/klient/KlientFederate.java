@@ -1,5 +1,6 @@
 package federates.klient;
 
+import events.ExternalEvent;
 import federates.sklep.SklepFederate;
 import hla.rti1516e.*;
 import hla.rti1516e.encoding.HLAunicodeString;
@@ -25,15 +26,15 @@ public class KlientFederate {
     private KlientFederateAmbassador fedamb;
     protected EncoderDecoder encoder;
 
-    // Interactions
+    // Interactions PUBLISHED
     protected InteractionClassHandle klientWchodziInteractionHandle;
     protected ParameterHandle idKlientaHandle;
 
-    protected InteractionClassHandle zwrocenieLiczbyProduktowHandle;
-    protected ParameterHandle idKlientaZwrocenieHandle;
-    protected ParameterHandle iloscProduktowHandle;
-
     protected InteractionClassHandle stopSimulationInteractionHandle;
+
+    // Interactions SUBSCRIBED
+    protected InteractionClassHandle koniecZakupowInteractionHandle;
+    protected ParameterHandle idKlientKoniecHandle;
 
     private int clientsEnteredShop = 0;
     private boolean sklepIsOpen = true;
@@ -180,7 +181,7 @@ public class KlientFederate {
 
     private double randomTime() {
         Random r = new Random();
-        return 1 +(4 * r.nextDouble());
+        return 1 +(Constants.WSPOLCZYNNIK_NAPLYWU_KLIENTOW * r.nextDouble());
     }
 
     private byte[] generateTag()
@@ -199,24 +200,48 @@ public class KlientFederate {
                 clientsEnteredShop++;
                 klientWchodziInteraction();
             }
+            else {
+                logger.info("Za dużo klientów w sklepie. Oczekiwanie na wejście.");
+            }
+
+            if (fedamb.getExternalEvents().size() > 0) {
+                fedamb.getExternalEvents().sort(new ExternalEvent.ExternalEventComparator());
+                for (ExternalEvent externalEvent : fedamb.getExternalEvents()) {
+                    switch (externalEvent.getEventType()) {
+                        case KONIEC_ZAKUPOW:
+                            String idKlientKoniec = (String) externalEvent.getData();
+                            koniecZakupowInteractionReceived(idKlientKoniec);
+                            break;
+                    }
+                }
+                fedamb.getExternalEvents().clear();
+            }
         }
 
         stopSimulation();
     }
 
-
+    private void koniecZakupowInteractionReceived(String idKlienta) {
+        clientsEnteredShop--;
+        logger.info(String.format("[KoniecZakupowInteractionReceived] Klient o id: %s wyszedł ze sklepu i zakończył zakupy. Pozostało klientów w sklepie: %s",
+                idKlienta,
+                clientsEnteredShop));
+    }
 
     private void publishAndSubscribe() throws RTIexception
     {
+        // PUBLISHED
         klientWchodziInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.KlientWchodzi");
         idKlientaHandle = rtiamb.getParameterHandle(klientWchodziInteractionHandle, "idKlient");
 
-        zwrocenieLiczbyProduktowHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.ZwrocenieLiczbyProduktow");
-        idKlientaZwrocenieHandle = rtiamb.getParameterHandle(zwrocenieLiczbyProduktowHandle, "idKlient");
-        iloscProduktowHandle = rtiamb.getParameterHandle(zwrocenieLiczbyProduktowHandle, "iloscProduktow");
+        // SUBSCRIBED
+        koniecZakupowInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.KoniecZakupow");
+        idKlientKoniecHandle = rtiamb.getParameterHandle(koniecZakupowInteractionHandle, "idKlient");
+
+        rtiamb.subscribeInteractionClass(koniecZakupowInteractionHandle);
+        /////////////////////////////////////
 
         rtiamb.publishInteractionClass(klientWchodziInteractionHandle);
-        rtiamb.publishInteractionClass(zwrocenieLiczbyProduktowHandle);
     }
 
     private void klientWchodziInteraction() throws RTIexception {
@@ -232,20 +257,6 @@ public class KlientFederate {
         logger.info(String.format("[KlientWchodziInteraction] Send interaction, klientId: %s", klientId,  newTimeDouble));
 
         rtiamb.sendInteraction(klientWchodziInteractionHandle, parameters, generateTag(), time);
-    }
-
-    private void klientZwracaProduktInteraction(String klientId) throws RTIexception {
-        HLAunicodeString klientIdValue = encoder.createHLAunicodeString(klientId);
-
-        ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(0);
-        parameters.put(idKlientaZwrocenieHandle, klientIdValue.toByteArray());
-
-        double newTimeDouble = fedamb.federateTime + fedamb.federateLookahead;
-        LogicalTime time = TimeUtils.convertTime(newTimeDouble);
-
-        logger.info(String.format("[KlientZwracaProduktInteraction] Send interaction, klientId: %s [TIME: %.1f]", klientId, newTimeDouble));
-
-        rtiamb.sendInteraction(zwrocenieLiczbyProduktowHandle, parameters, generateTag(), time);
     }
 
     private void stopSimulation() throws RTIexception {

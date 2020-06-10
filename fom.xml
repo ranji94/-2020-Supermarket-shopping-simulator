@@ -110,27 +110,6 @@
             </interactionClass>
 
             <interactionClass>
-                <name>PrzekazDaneKolejki</name>
-                <sharing>PublishSubscribe</sharing>
-                <dimensions/>
-                <transportation>HLAreliable</transportation>
-                <order>TimeStamp</order>
-                <semantics></semantics>
-                <parameter>
-                    <name>idKlienta</name>
-                    <dataType>HLAunicodeString</dataType>
-                </parameter>
-                <parameter>
-                    <name>dlugoscKolejki</name>
-                    <dataType>HLAinteger32BE</dataType>
-                </parameter>
-                <parameter>
-                    <name>sredniCzasObslugi</name>
-                    <dataType>HLAinteger32BE</dataType>
-                </parameter>
-            </interactionClass>
-
-            <interactionClass>
                 <name>ZamknijKase</name>
                 <sharing>PublishSubscribe</sharing>
                 <dimensions/>

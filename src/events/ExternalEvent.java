@@ -11,7 +11,7 @@ public class ExternalEvent<T> {
         ZADANIE_POLICZENIE,
         PRZEKIEROWANIE_KLIENTA,
         ZWROCENIE_LICZBY_PRODUKTOW,
-        PRZEKAZ_DANE_KOLEJKI,
+        KLIENT_WYSZEDL,
         ZAMKNIJ_KASE,
         OTWORZ_KASE,
         KONIEC_ZAKUPOW,
