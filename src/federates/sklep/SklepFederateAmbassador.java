@@ -98,12 +98,9 @@ public class SklepFederateAmbassador extends NullFederateAmbassador {
         if (interactionClass.equals(federate.koniecZakupowInteractionHandle)) {
             double receiveTime = TimeUtils.convertTime(time);
             logger.info(String.format("Receive interaction KoniecZakupow [TIME:%.1f]", receiveTime));
-            String idKlient = encoder.toString(theParameters.get(federate.idKlientaKoniecHandle));
-            String idKasy = encoder.toString(theParameters.get(federate.idKasyKoniecHandle));
+            String idKlient = encoder.toString(theParameters.get(federate.idKlientKoniecHandle));
 
-            Object [] data = { idKlient, idKasy };
-
-            externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.KONIEC_ZAKUPOW, receiveTime));
+            externalEvents.add(new ExternalEvent(idKlient, ExternalEvent.EventType.KONIEC_ZAKUPOW, receiveTime));
         }
     }
 

@@ -51,8 +51,7 @@ public class SklepFederate {
     protected ParameterHandle idKlientWchodziHandle;
 
     protected InteractionClassHandle koniecZakupowInteractionHandle;
-    protected ParameterHandle idKlientaKoniecHandle;
-    protected ParameterHandle idKasyKoniecHandle;
+    protected ParameterHandle idKlientKoniecHandle;
 
     protected InteractionClassHandle stopSimulationInteractionHandle;
 
@@ -63,7 +62,7 @@ public class SklepFederate {
 
     private double randomTime() {
         Random r = new Random();
-        return 1 +(4 * r.nextDouble());
+        return 1 + (4 * r.nextDouble());
     }
 
     private void run() throws RTIexception {
@@ -78,19 +77,19 @@ public class SklepFederate {
             advanceTime(Constants.TIME_STEP);
             if (Constants.LOG_TIME_ADVANCE) logger.info(String.format("Time Advanced to %.1f", fedamb.federateTime));
 
-            if(fedamb.getExternalEvents().size() > 0) {
+            if (fedamb.getExternalEvents().size() > 0) {
                 fedamb.getExternalEvents().sort(new ExternalEvent.ExternalEventComparator());
                 for (ExternalEvent externalEvent : fedamb.getExternalEvents()) {
                     switch (externalEvent.getEventType()) {
                         case KLIENT_WCHODZI:
-                            if(Sklep.getInstance().getSumaWszystkichKlientow() < Constants.MAX_KLIENTOW_W_SKLEPIE) {
+                            if (Sklep.getInstance().getSumaWszystkichKlientow() < Constants.MAX_KLIENTOW_W_SKLEPIE) {
                                 String klientId = (String) externalEvent.getData();
                                 klientWchodziReceived(klientId);
                             }
                             break;
                         case KONIEC_ZAKUPOW:
-                            Object [] koniecZakupowData = (Object [])externalEvent.getData();
-                            koniecZakupowInteractionReceived(koniecZakupowData);
+                            String idKlientKoniec = (String) externalEvent.getData();
+                            koniecZakupowInteractionReceived(idKlientKoniec);
                             break;
                     }
                 }
@@ -109,10 +108,10 @@ public class SklepFederate {
                     Sklep.getInstance().getKlienciWKolejkach().put(wylosowanyKlientId, Sklep.getInstance().getWszyscyKlienciWSklepie().get(wylosowanyKlientId));
                     Sklep.getInstance().getKlienciNaZakupach().remove(wylosowanyKlientId);
 
-                    if(!kolejkaPoczatkowaIstnieje) {
+                    if (!kolejkaPoczatkowaIstnieje) {
                         String idKolejki = UUIDUtils.shortId();
                         otworzKolejkeInteraction(idKolejki);
-                        kolejkaPoczatkowaIstnieje=true;
+                        kolejkaPoczatkowaIstnieje = true;
                     }
 
                     klientDoKolejkiInteraction(wylosowanyKlientId, Sklep.getInstance().getWszyscyKlienciWSklepie().get(wylosowanyKlientId).getIloscProduktow());
@@ -121,9 +120,7 @@ public class SklepFederate {
         }
     }
 
-    private void koniecZakupowInteractionReceived(Object [] data) {
-        String idKlient = (String) data[0];
-
+    private void koniecZakupowInteractionReceived(String idKlient) {
         Sklep.getInstance().getKlienciNaZakupach().remove(idKlient);
         Sklep.getInstance().getKlienciWKolejkach().remove(idKlient);
         Sklep.getInstance().getWszyscyKlienciWSklepie().remove(idKlient);
@@ -141,10 +138,9 @@ public class SklepFederate {
 
         Klient klient = new Klient(klientId);
 
-        if(coKtoryKlient != randomizedClient) {
+        if (coKtoryKlient != randomizedClient) {
             klient.setIloscProduktow(rand.nextInt(Constants.MAX_PRODUKTOW_KLIENTA + 1) + 5);
-        }
-        else {
+        } else {
             klient.setIloscProduktow(rand.nextInt(5) + 1);
         }
 
@@ -154,8 +150,7 @@ public class SklepFederate {
         Sklep.getInstance().getKlienciNaZakupach().put(klient.getIdKlient(), klient);
     }
 
-    private void publishAndSubscribe() throws RTIexception
-    {
+    private void publishAndSubscribe() throws RTIexception {
         //PUBLISHED
         otworzKolejkeInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.OtworzKolejke");
         idKolejkiOtworzHandle = rtiamb.getParameterHandle(otworzKolejkeInteractionHandle, "idKolejki");
@@ -172,8 +167,7 @@ public class SklepFederate {
         idKlientWchodziHandle = rtiamb.getParameterHandle(klientWchodziInteractionHandle, "idKlient");
 
         koniecZakupowInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.KoniecZakupow");
-        idKlientaKoniecHandle = rtiamb.getParameterHandle(koniecZakupowInteractionHandle, "idKlient");
-        idKasyKoniecHandle = rtiamb.getParameterHandle(koniecZakupowInteractionHandle, "idKasy");
+        idKlientKoniecHandle = rtiamb.getParameterHandle(koniecZakupowInteractionHandle, "idKlient");
         //////////////////////////////////////////////////////////////
 
         rtiamb.subscribeInteractionClass(klientWchodziInteractionHandle);
@@ -228,52 +222,42 @@ public class SklepFederate {
         rtiamb.sendInteraction(zamknijKolejkeInteractionHandle, parameters, generateTag(), time);
     }
 
-    private void waitForUser()
-    {
-        logger.info( " >>>>>>>>>> Press Enter to Continue <<<<<<<<<<" );
-        BufferedReader reader = new BufferedReader( new InputStreamReader(System.in) );
-        try
-        {
+    private void waitForUser() {
+        logger.info(" >>>>>>>>>> Press Enter to Continue <<<<<<<<<<");
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        try {
             reader.readLine();
-        }
-        catch( Exception e )
-        {
-            logger.info( "Error while waiting for user input: " + e.getMessage() );
+        } catch (Exception e) {
+            logger.info("Error while waiting for user input: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    public void runFederate( String federateName ) throws Exception
-    {
+    public void runFederate(String federateName) throws Exception {
         // create rti
-        logger.info( "Creating RTIambassador" );
+        logger.info("Creating RTIambassador");
         rtiamb = RtiFactoryFactory.getRtiFactory().getRtiAmbassador();
         encoder = new EncoderDecoder();
 
         // connect
-        logger.info( "Connecting..." );
-        fedamb = new SklepFederateAmbassador( this );
-        rtiamb.connect( fedamb, CallbackModel.HLA_EVOKED );
+        logger.info("Connecting...");
+        fedamb = new SklepFederateAmbassador(this);
+        rtiamb.connect(fedamb, CallbackModel.HLA_EVOKED);
 
         // create federation
-        logger.info( "Creating Federation..." );
-        try
-        {
+        logger.info("Creating Federation...");
+        try {
             URL[] modules = new URL[]{
                     (new File("HLAstandardMIM.xml")).toURI().toURL(),
                     (new File("fom.xml")).toURI().toURL()
             };
 
-            rtiamb.createFederationExecution( "SupermarketFederation", modules );
-            logger.info( "Created Federation" );
-        }
-        catch( FederationExecutionAlreadyExists exists )
-        {
-            logger.info( "Didn't create federation, it already existed" );
-        }
-        catch( MalformedURLException urle )
-        {
-            logger.info( "Exception loading one of the FOM modules from disk: " + urle.getMessage() );
+            rtiamb.createFederationExecution("SupermarketFederation", modules);
+            logger.info("Created Federation");
+        } catch (FederationExecutionAlreadyExists exists) {
+            logger.info("Didn't create federation, it already existed");
+        } catch (MalformedURLException urle) {
+            logger.info("Exception loading one of the FOM modules from disk: " + urle.getMessage());
             urle.printStackTrace();
             return;
         }
@@ -283,94 +267,81 @@ public class SklepFederate {
                 (new File("fom.xml")).toURI().toURL()
         };
 
-        rtiamb.joinFederationExecution( federateName,
+        rtiamb.joinFederationExecution(federateName,
                 "SklepFederateType",
                 "SupermarketFederation",
-                joinModules );
+                joinModules);
 
-        logger.info( "Joined Federation as " + federateName );
+        logger.info("Joined Federation as " + federateName);
 
 
         //announce the sync point
-        rtiamb.registerFederationSynchronizationPoint( READY_TO_RUN, null );
-        while(!fedamb.isAnnounced)
-        {
-            rtiamb.evokeMultipleCallbacks( 0.1, 0.2 );
+        rtiamb.registerFederationSynchronizationPoint(READY_TO_RUN, null);
+        while (!fedamb.isAnnounced) {
+            rtiamb.evokeMultipleCallbacks(0.1, 0.2);
         }
 
         waitForUser();
 
         //achieve the point and wait for synchronization
-        rtiamb.synchronizationPointAchieved( READY_TO_RUN );
-        logger.info( "Achieved sync point: " +READY_TO_RUN+ ", waiting for federation..." );
-        while(!fedamb.isReadyToRun)
-        {
-            rtiamb.evokeMultipleCallbacks( 0.1, 0.2 );
+        rtiamb.synchronizationPointAchieved(READY_TO_RUN);
+        logger.info("Achieved sync point: " + READY_TO_RUN + ", waiting for federation...");
+        while (!fedamb.isReadyToRun) {
+            rtiamb.evokeMultipleCallbacks(0.1, 0.2);
         }
 
         //enable time policies
         enableTimePolicy();
-        logger.info( "Time Policy Enabled" );
+        logger.info("Time Policy Enabled");
 
         //publish and subscribe
         publishAndSubscribe();
-        logger.info( "Published and Subscribed" );
+        logger.info("Published and Subscribed");
 
         run();
 
         // resign from the federation
-        rtiamb.resignFederationExecution( ResignAction.DELETE_OBJECTS );
-        logger.info( "Resigned from Federation" );
+        rtiamb.resignFederationExecution(ResignAction.DELETE_OBJECTS);
+        logger.info("Resigned from Federation");
 
         //try and destroy the federation
-        try
-        {
-            rtiamb.destroyFederationExecution( "SkiStationFederation" );
-            logger.info( "Destroyed Federation" );
-        }
-        catch( FederationExecutionDoesNotExist dne )
-        {
-            logger.info( "No need to destroy federation, it doesn't exist" );
-        }
-        catch( FederatesCurrentlyJoined fcj )
-        {
-            logger.info( "Didn't destroy federation, federates still joined" );
+        try {
+            rtiamb.destroyFederationExecution("SkiStationFederation");
+            logger.info("Destroyed Federation");
+        } catch (FederationExecutionDoesNotExist dne) {
+            logger.info("No need to destroy federation, it doesn't exist");
+        } catch (FederatesCurrentlyJoined fcj) {
+            logger.info("Didn't destroy federation, federates still joined");
         }
     }
 
-    private void enableTimePolicy() throws Exception
-    {
+    private void enableTimePolicy() throws Exception {
         LogicalTimeInterval lookahead = TimeUtils.convertInterval(fedamb.federateLookahead);
 
-        this.rtiamb.enableTimeRegulation( lookahead );
-        while(!fedamb.isRegulating)
-        {
-            rtiamb.evokeMultipleCallbacks( 0.1, 0.2 );
+        this.rtiamb.enableTimeRegulation(lookahead);
+        while (!fedamb.isRegulating) {
+            rtiamb.evokeMultipleCallbacks(0.1, 0.2);
         }
 
         this.rtiamb.enableTimeConstrained();
-        while(!fedamb.isConstrained)
-        {
-            rtiamb.evokeMultipleCallbacks( 0.1, 0.2 );
+        while (!fedamb.isConstrained) {
+            rtiamb.evokeMultipleCallbacks(0.1, 0.2);
         }
     }
 
-    private void advanceTime( double timestep ) throws RTIexception
-    {
+    private void advanceTime(double timestep) throws RTIexception {
         fedamb.isAdvancing = true;
         double timeToAdvance = fedamb.federateTime + timestep;
         LogicalTime newTime = TimeUtils.convertTime(timeToAdvance);
         if (Constants.LOG_TIME_REQUEST) logger.info("Requesting time advance for: " + timeToAdvance);
 
-        rtiamb.timeAdvanceRequest( newTime );
-        while( fedamb.isAdvancing )
-        {
-            rtiamb.evokeMultipleCallbacks( 0.1, 0.2 );
+        rtiamb.timeAdvanceRequest(newTime);
+        while (fedamb.isAdvancing) {
+            rtiamb.evokeMultipleCallbacks(0.1, 0.2);
         }
     }
 
-    private byte[] generateTag()
-    {
+    private byte[] generateTag() {
         return ("(timestamp) " + System.currentTimeMillis()).getBytes();
     }
 
@@ -381,18 +352,16 @@ public class SklepFederate {
     //----------------------------------------------------------
     //                     STATIC METHODS
     //----------------------------------------------------------
-    public static void main( String[] args )
-    {
+    public static void main(String[] args) {
         String sklepFederateName = "SklepFederate";
-        if( args.length != 0 ) {
+        if (args.length != 0) {
             sklepFederateName = args[0];
         }
 
         try {
             SklepFederate federate = new SklepFederate();
-            federate.runFederate( sklepFederateName );
-        }
-        catch( Exception rtie ) {
+            federate.runFederate(sklepFederateName);
+        } catch (Exception rtie) {
             // an exception occurred, just log the information and exit
             rtie.printStackTrace();
         }

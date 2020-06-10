@@ -93,6 +93,14 @@ public class KlientFederateAmbassador extends NullFederateAmbassador {
 
             externalEvents.add(new ExternalEvent(null, ExternalEvent.EventType.STOP_SIMULATION, receiveTime));
         }
+
+        if (interactionClass.equals(federate.koniecZakupowInteractionHandle)) {
+            double receiveTime = TimeUtils.convertTime(time);
+            logger.info(String.format("Receive interaction KoniecZakupow [TIME:%.1f]", receiveTime));
+            String idKlient = encoder.toString(theParameters.get(federate.idKlientKoniecHandle));
+
+            externalEvents.add(new ExternalEvent(idKlient, ExternalEvent.EventType.KONIEC_ZAKUPOW, receiveTime));
+        }
     }
 
     @Override

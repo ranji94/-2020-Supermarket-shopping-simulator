@@ -18,6 +18,7 @@ import utils.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.net.ContentHandler;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
@@ -63,52 +64,42 @@ public class KolejkaFederate {
 
     private boolean sklepIsOpen = true;
 
-    private void waitForUser()
-    {
-        logger.info( " >>>>>>>>>> Press Enter to Continue <<<<<<<<<<" );
-        BufferedReader reader = new BufferedReader( new InputStreamReader(System.in) );
-        try
-        {
+    private void waitForUser() {
+        logger.info(" >>>>>>>>>> Press Enter to Continue <<<<<<<<<<");
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        try {
             reader.readLine();
-        }
-        catch( Exception e )
-        {
-            logger.info( "Error while waiting for user input: " + e.getMessage() );
+        } catch (Exception e) {
+            logger.info("Error while waiting for user input: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    private void runFederate( String federateName ) throws Exception
-    {
+    private void runFederate(String federateName) throws Exception {
         // create rti
-        logger.info( "Creating RTIambassador" );
+        logger.info("Creating RTIambassador");
         rtiamb = RtiFactoryFactory.getRtiFactory().getRtiAmbassador();
         encoder = new EncoderDecoder();
 
         // connect
-        logger.info( "Connecting..." );
-        fedamb = new KolejkaFederateAmbassador( this );
-        rtiamb.connect( fedamb, CallbackModel.HLA_EVOKED );
+        logger.info("Connecting...");
+        fedamb = new KolejkaFederateAmbassador(this);
+        rtiamb.connect(fedamb, CallbackModel.HLA_EVOKED);
 
         // create federation
-        logger.info( "Creating Federation..." );
-        try
-        {
+        logger.info("Creating Federation...");
+        try {
             URL[] modules = new URL[]{
                     (new File("HLAstandardMIM.xml")).toURI().toURL(),
                     (new File("fom.xml")).toURI().toURL()
             };
 
-            rtiamb.createFederationExecution( "SupermarketFederation", modules );
-            logger.info( "Created Federation" );
-        }
-        catch( FederationExecutionAlreadyExists exists )
-        {
-            logger.info( "Didn't create federation, it already existed" );
-        }
-        catch( MalformedURLException urle )
-        {
-            logger.info( "Exception loading one of the FOM modules from disk: " + urle.getMessage() );
+            rtiamb.createFederationExecution("SupermarketFederation", modules);
+            logger.info("Created Federation");
+        } catch (FederationExecutionAlreadyExists exists) {
+            logger.info("Didn't create federation, it already existed");
+        } catch (MalformedURLException urle) {
+            logger.info("Exception loading one of the FOM modules from disk: " + urle.getMessage());
             urle.printStackTrace();
             return;
         }
@@ -118,109 +109,96 @@ public class KolejkaFederate {
                 (new File("fom.xml")).toURI().toURL()
         };
 
-        rtiamb.joinFederationExecution( federateName,
+        rtiamb.joinFederationExecution(federateName,
                 "KolejkaFederate",
                 "SupermarketFederation",
-                joinModules );
+                joinModules);
 
-        logger.info( "Joined Federation as " + federateName );
+        logger.info("Joined Federation as " + federateName);
 
         //announce the sync point
-        rtiamb.registerFederationSynchronizationPoint( READY_TO_RUN, null );
-        while(!fedamb.isAnnounced)
-        {
-            rtiamb.evokeMultipleCallbacks( 0.1, 0.2 );
+        rtiamb.registerFederationSynchronizationPoint(READY_TO_RUN, null);
+        while (!fedamb.isAnnounced) {
+            rtiamb.evokeMultipleCallbacks(0.1, 0.2);
         }
 
         waitForUser();
 
         //achieve the point and wait for synchronization
-        rtiamb.synchronizationPointAchieved( READY_TO_RUN );
-        logger.info( "Achieved sync point: " +READY_TO_RUN+ ", waiting for federation..." );
-        while(!fedamb.isReadyToRun)
-        {
-            rtiamb.evokeMultipleCallbacks( 0.1, 0.2 );
+        rtiamb.synchronizationPointAchieved(READY_TO_RUN);
+        logger.info("Achieved sync point: " + READY_TO_RUN + ", waiting for federation...");
+        while (!fedamb.isReadyToRun) {
+            rtiamb.evokeMultipleCallbacks(0.1, 0.2);
         }
 
         //enable time policies
         enableTimePolicy();
-        logger.info( "Time Policy Enabled" );
+        logger.info("Time Policy Enabled");
 
         //publish and subscribe
         publishAndSubscribe();
-        logger.info( "Published and Subscribed" );
+        logger.info("Published and Subscribed");
 
         run();
 
         // resign from the federation
-        rtiamb.resignFederationExecution( ResignAction.DELETE_OBJECTS );
-        logger.info( "Resigned from Federation" );
+        rtiamb.resignFederationExecution(ResignAction.DELETE_OBJECTS);
+        logger.info("Resigned from Federation");
 
         //try and destroy the federation
-        try
-        {
-            rtiamb.destroyFederationExecution( "SupermarketFederation" );
-            logger.info( "Destroyed Federation" );
-        }
-        catch( FederationExecutionDoesNotExist dne )
-        {
-            logger.info( "No need to destroy federation, it doesn't exist" );
-        }
-        catch( FederatesCurrentlyJoined fcj )
-        {
-            logger.info( "Didn't destroy federation, federates still joined" );
+        try {
+            rtiamb.destroyFederationExecution("SupermarketFederation");
+            logger.info("Destroyed Federation");
+        } catch (FederationExecutionDoesNotExist dne) {
+            logger.info("No need to destroy federation, it doesn't exist");
+        } catch (FederatesCurrentlyJoined fcj) {
+            logger.info("Didn't destroy federation, federates still joined");
         }
     }
 
-    private void enableTimePolicy() throws Exception
-    {
+    private void enableTimePolicy() throws Exception {
         LogicalTimeInterval lookahead = TimeUtils.convertInterval(fedamb.federateLookahead);
 
-        this.rtiamb.enableTimeRegulation( lookahead );
-        while(!fedamb.isRegulating)
-        {
-            rtiamb.evokeMultipleCallbacks( 0.1, 0.2 );
+        this.rtiamb.enableTimeRegulation(lookahead);
+        while (!fedamb.isRegulating) {
+            rtiamb.evokeMultipleCallbacks(0.1, 0.2);
         }
 
         this.rtiamb.enableTimeConstrained();
-        while(!fedamb.isConstrained)
-        {
-            rtiamb.evokeMultipleCallbacks( 0.1, 0.2 );
+        while (!fedamb.isConstrained) {
+            rtiamb.evokeMultipleCallbacks(0.1, 0.2);
         }
     }
 
-    private void advanceTime( double timestep ) throws RTIexception
-    {
+    private void advanceTime(double timestep) throws RTIexception {
         fedamb.isAdvancing = true;
         double timeToAdvance = fedamb.federateTime + timestep;
         LogicalTime newTime = TimeUtils.convertTime(timeToAdvance);
         if (Constants.LOG_TIME_REQUEST) logger.info("Requesting time advance for: " + timeToAdvance);
 
-        rtiamb.timeAdvanceRequest( newTime );
-        while( fedamb.isAdvancing )
-        {
-            rtiamb.evokeMultipleCallbacks( 0.1, 0.2 );
+        rtiamb.timeAdvanceRequest(newTime);
+        while (fedamb.isAdvancing) {
+            rtiamb.evokeMultipleCallbacks(0.1, 0.2);
         }
     }
 
     private double randomTime() {
         Random r = new Random();
-        return 1 +(4 * r.nextDouble());
+        return 1 + (4 * r.nextDouble());
     }
 
-    private byte[] generateTag()
-    {
-        return ("(timestamp) "+System.currentTimeMillis()).getBytes();
+    private byte[] generateTag() {
+        return ("(timestamp) " + System.currentTimeMillis()).getBytes();
     }
 
     ///////////////////////////////////////////////////////////////////
 
     public void run() throws RTIexception {
-        while(sklepIsOpen) {
+        while (sklepIsOpen) {
             advanceTime(randomTime());
             if (Constants.LOG_TIME_ADVANCE) logger.info(String.format("Time Advanced to %.1f", fedamb.federateTime));
 
-            if(fedamb.getExternalEvents().size() > 0) {
+            if (fedamb.getExternalEvents().size() > 0) {
                 fedamb.getExternalEvents().sort(new ExternalEvent.ExternalEventComparator());
                 for (ExternalEvent externalEvent : fedamb.getExternalEvents()) {
                     switch (externalEvent.getEventType()) {
@@ -233,11 +211,11 @@ public class KolejkaFederate {
                             zamknijKolejkeReceived(zamknijKolejkeKolejkaId);
                             break;
                         case KLIENT_DO_KOLEJKI:
-                            Object [] klientDoKolejkiData = (Object [])externalEvent.getData();
+                            Object[] klientDoKolejkiData = (Object[]) externalEvent.getData();
                             klientDoKolejkiReceived(klientDoKolejkiData);
                             break;
                         case KONIEC_ZAKUPOW:
-                            Object [] koniecZakupowData = (Object [])externalEvent.getData();
+                            Object[] koniecZakupowData = (Object[]) externalEvent.getData();
                             koniecZakupowInteractionReceived(koniecZakupowData);
                             break;
                     }
@@ -245,28 +223,56 @@ public class KolejkaFederate {
                 fedamb.getExternalEvents().clear();
             }
 
-            //List<String> wszystkieKolejki = new ArrayList<>(Interfejs.getInstance().getWszystkieKolejki().keySet());
-            //if(wszystkieKolejki.size() > 0) {
-                //Random rand = new Random();
-                ////////// TU ZAKONCZYLEM, KOLEJKA MUSI ZOSTAC WYLOSOWANA
-                Kolejka wylosowanaKolejka = Interfejs.getInstance().getWszystkieKolejki().get(Interfejs.getInstance().getWszystkieKolejki().size());
-            if(wylosowanaKolejka != null) {
-                if (wylosowanaKolejka.getDlugoscKolejki() > 0) {
-                    wylosowanaKolejka.getListaKlientow().peek().setPrzyKasie(true);
-                    Klient klient = wylosowanaKolejka.getListaKlientow().peek();
+            if (Interfejs.getInstance().getWszystkieKolejki().size() > 0) {
+                Random rand = new Random();
+                Object[] kolejkiIds = Interfejs.getInstance().getWszystkieKolejki().keySet().toArray();
+                Object key = kolejkiIds[rand.nextInt(kolejkiIds.length)];
+                Kolejka wylosowanaKolejka = Interfejs.getInstance().getWszystkieKolejki().get(key);
 
-                    klientDoKasyInteraction(wylosowanaKolejka.getIdKasy(), klient.getIdKlient(), klient.getIloscProduktow());
+                if (!isAnyClientInCashout(wylosowanaKolejka)) {
+                    Klient pierwszyKlientWKolejce = wylosowanaKolejka.getListaKlientow().peek();
+                    wylosowanaKolejka.getListaKlientow().peek().setPrzyKasie(true);
+                    Interfejs.getInstance().getWszystkieKolejki().put(wylosowanaKolejka.getIdKolejki(), wylosowanaKolejka);
+                    logger.info(String.format("[KlientDoKasy] Pierwszy klient w kolejce: %s", pierwszyKlientWKolejce));
+
+                    klientDoKasyInteraction(wylosowanaKolejka.getIdKasy(), pierwszyKlientWKolejce.getIdKlient(), pierwszyKlientWKolejce.getIloscProduktow());
                 }
+
+                ////////////// STATS PRINT
+                List<Integer> dlugosciWszystkichKolejek = new ArrayList<>();
+                for (Map.Entry<String, Kolejka> q : Interfejs.getInstance().getWszystkieKolejki().entrySet()) {
+                    dlugosciWszystkichKolejek.add(q.getValue().getDlugoscKolejki());
+                }
+
+                logger.info(String.format("[StatusKolejek] Lista kolejek i osób w nich: %s", dlugosciWszystkichKolejek));
             }
         }
     }
 
-    private void koniecZakupowInteractionReceived(Object [] data) {
+    private boolean isAnyClientInCashout(Kolejka kolejka) {
+        boolean inCashout = false;
+
+        for (Klient klient : kolejka.getListaKlientow()) {
+            if (klient.isPrzyKasie()) {
+                inCashout = true;
+            }
+        }
+
+        return inCashout;
+    }
+
+    private void koniecZakupowInteractionReceived(Object[] data) throws RTIexception {
         String idKlient = (String) data[0];
         String idKasa = (String) data[1];
-
         Interfejs.getInstance().getWszystkieKolejki().get(idKasa).getListaKlientow().remove();
+
         logger.info(String.format("[KoniecZakupow] Usunięto klienta %s z kolejki %s", idKlient, idKasa));
+        if (Interfejs.getInstance().getWszystkieKolejki().get(idKasa).getListaKlientow().size() == 0) {
+            logger.info(String.format("[KoniecZakupow] Brak klientów do kasy %s. Zamykam kase", idKasa));
+            Interfejs.getInstance().getWszystkieKolejki().remove(idKasa);
+            zamknijKaseInteraction(idKasa);
+        }
+
     }
 
     private void otworzKolejkeReceived(String idKolejki) {
@@ -275,7 +281,7 @@ public class KolejkaFederate {
         Kolejka kolejka = new Kolejka();
         kolejka.setIdKolejki(idKolejki);
         kolejka.setIdKasy(idKolejki);
-        kolejka.setSredniCzasObslugi(rand.nextInt(10 + 1) + 1);
+        kolejka.setSredniCzasObslugi(rand.nextInt(Constants.MAX_SREDNI_CZAS_OBSLUGI + 1) + 1);
         kolejka.setListaKlientow(new LinkedList<>());
 
         Interfejs.getInstance().getWszystkieKolejki().put(kolejka.getIdKolejki(), kolejka);
@@ -299,7 +305,13 @@ public class KolejkaFederate {
         Kolejka kolejka = Interfejs.getInstance().getNajkrotszaKolejka();
         Klient klient = new Klient(idKlienta, iloscProduktow, false);
 
-        if(kolejka.getDlugoscKolejki() >= Constants.MAX_DLUGOSC_KOLEJKI) {
+        if (kolejka == null) {
+            String idNowejKolejki = UUIDUtils.shortId();
+            otworzKolejkeReceived(idNowejKolejki);
+            kolejka = Interfejs.getInstance().getWszystkieKolejki().get(idNowejKolejki);
+        }
+
+        if (kolejka.getDlugoscKolejki() >= Constants.MAX_DLUGOSC_KOLEJKI) {
             String idNowejKolejki = UUIDUtils.shortId();
             otworzKolejkeReceived(idNowejKolejki);
             kolejka = Interfejs.getInstance().getNajkrotszaKolejka();
@@ -312,17 +324,9 @@ public class KolejkaFederate {
                 klient.getIdKlient(),
                 kolejka.getIdKolejki(),
                 kolejka.getDlugoscKolejki()));
-
-        List<Integer> dlugosciWszystkichKolejek = new ArrayList<>();
-        for(Map.Entry<String, Kolejka> q : Interfejs.getInstance().getWszystkieKolejki().entrySet()) {
-            dlugosciWszystkichKolejek.add(q.getValue().getDlugoscKolejki());
-        }
-
-        logger.info(String.format("[KlientDoKolejkiReceived] Lista kolejek: %s", dlugosciWszystkichKolejek));
     }
 
-    private void publishAndSubscribe() throws RTIexception
-    {
+    private void publishAndSubscribe() throws RTIexception {
         // PUBLISHED
         otworzKaseInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.OtworzKase");
         idKasyOtworzHandle = rtiamb.getParameterHandle(otworzKaseInteractionHandle, "idKasy");
@@ -381,6 +385,20 @@ public class KolejkaFederate {
         rtiamb.sendInteraction(otworzKaseInteractionHandle, parameters, generateTag(), time);
     }
 
+    private void zamknijKaseInteraction(String kasaKolejkaId) throws RTIexception {
+        HLAunicodeString kasaKolejkaIdValue = encoder.createHLAunicodeString(kasaKolejkaId);
+
+        ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(0);
+        parameters.put(idKasyZamknijHandle, kasaKolejkaIdValue.toByteArray());
+
+        double newTimeDouble = fedamb.federateTime + fedamb.federateLookahead;
+        LogicalTime time = TimeUtils.convertTime(newTimeDouble);
+
+        logger.info(String.format("[ZamknijKaseInteraction] Send interaction, kasaId and kolejkaId: %s [TIME: %.1f]", kasaKolejkaId, newTimeDouble));
+
+        rtiamb.sendInteraction(zamknijKaseInteractionHandle, parameters, generateTag(), time);
+    }
+
     private void klientDoKasyInteraction(String idKasy, String idKlient, int iloscProduktow) throws RTIexception {
         HLAunicodeString idKasyValue = encoder.createHLAunicodeString(idKasy);
         HLAunicodeString idKlientValue = encoder.createHLAunicodeString(idKlient);
@@ -394,7 +412,7 @@ public class KolejkaFederate {
         double newTimeDouble = fedamb.federateTime + fedamb.federateLookahead;
         LogicalTime time = TimeUtils.convertTime(newTimeDouble);
 
-        logger.info(String.format("[KlientDoKasyInteraction] Send interaction, kasaId: %s and klientId: %s [TIME: %.1f]", idKasy,  idKlient,  newTimeDouble));
+        logger.info(String.format("[KlientDoKasyInteraction] Send interaction, kasaId: %s and klientId: %s [TIME: %.1f]", idKasy, idKlient, newTimeDouble));
 
         rtiamb.sendInteraction(klientDoKasyInteractionHandle, parameters, generateTag(), time);
     }
@@ -402,17 +420,15 @@ public class KolejkaFederate {
     //----------------------------------------------------------
     //                     STATIC METHODS
     //----------------------------------------------------------
-    public static void main( String[] args )
-    {
+    public static void main(String[] args) {
         String federateName = "KolejkaFederate";
-        if( args.length != 0 ) {
+        if (args.length != 0) {
             federateName = args[0];
         }
 
         try {
-            new KolejkaFederate().runFederate( federateName );
-        }
-        catch( Exception rtie ) {
+            new KolejkaFederate().runFederate(federateName);
+        } catch (Exception rtie) {
             rtie.printStackTrace();
         }
     }

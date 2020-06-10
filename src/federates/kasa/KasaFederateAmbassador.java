@@ -99,6 +99,14 @@ public class KasaFederateAmbassador extends NullFederateAmbassador {
             externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.OTWORZ_KASE, receiveTime));
         }
 
+        if (interactionClass.equals(federate.zamknijKaseInteractionHandle)) {
+            double receiveTime = TimeUtils.convertTime(time);
+            logger.info(String.format("Receive interaction ZamknijKase [TIME:%.1f]", receiveTime));
+            String idKasy = encoder.toString(theParameters.get(federate.idKasyZamknijHandle));
+
+            externalEvents.add(new ExternalEvent(idKasy, ExternalEvent.EventType.ZAMKNIJ_KASE, receiveTime));
+        }
+
         if (interactionClass.equals(federate.klientDoKasyInteractionHandle)) {
             double receiveTime = TimeUtils.convertTime(time);
             logger.info(String.format("Receive interaction KlientDoKasy [TIME:%.1f]", receiveTime));
