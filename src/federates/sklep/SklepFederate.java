@@ -98,11 +98,9 @@ public class SklepFederate {
 
             if (isClientsInShop) {
                 Random rand = new Random();
-                int coKtoryKlientKonczyZakupy = Math.round(1 / Constants.PRAWDOPODOBIENSTWO_ZAKONCZENIA_ZAKUPOW);
-                int randomValue = rand.nextInt(coKtoryKlientKonczyZakupy) + 1;
                 List<String> clientsInShoppingIds = new ArrayList<>(sklep.getKlienciNaZakupach().keySet());
 
-                if (coKtoryKlientKonczyZakupy == randomValue && clientsInShoppingIds.size() > 0) {
+                if (RandomUtils.getRandomBooleanWithProbability(Constants.PRAWDOPODOBIENSTWO_ZAKONCZENIA_ZAKUPOW) && clientsInShoppingIds.size() > 0) {
                     String wylosowanyKlientId = clientsInShoppingIds.get(rand.nextInt(clientsInShoppingIds.size()));
                     logger.info(String.format("Klient o ID: %s zdecydował się ustawić w kolejce", wylosowanyKlientId));
                     Sklep.getInstance().getKlienciWKolejkach().put(wylosowanyKlientId, Sklep.getInstance().getWszyscyKlienciWSklepie().get(wylosowanyKlientId));
@@ -131,14 +129,11 @@ public class SklepFederate {
     private void klientWchodziReceived(String klientId) {
         logger.info(String.format("[KlientWchodziReceivedInteraction]: Client with id: %s, entered to shop.", klientId));
         Random rand = new Random();
-
         float probability = Constants.PROCENT_KLIENTOW_KUPUJACYCH_5_PRODUKTOW / 100f;
-        int coKtoryKlient = Math.round(1 / probability);
-        int randomizedClient = rand.nextInt(coKtoryKlient) + 1;
 
         Klient klient = new Klient(klientId);
 
-        if (coKtoryKlient != randomizedClient) {
+        if (RandomUtils.getRandomBooleanWithProbability(probability)) {
             klient.setIloscProduktow(rand.nextInt(Constants.MAX_PRODUKTOW_KLIENTA + 1) + 5);
         } else {
             klient.setIloscProduktow(rand.nextInt(5) + 1);

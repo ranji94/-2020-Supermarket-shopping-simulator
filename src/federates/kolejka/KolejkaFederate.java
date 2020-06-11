@@ -283,11 +283,12 @@ public class KolejkaFederate {
         kolejka.setIdKasy(idKolejki);
         kolejka.setSredniCzasObslugi(rand.nextInt(Constants.MAX_SREDNI_CZAS_OBSLUGI + 1) + 1);
         kolejka.setListaKlientow(new LinkedList<>());
+        kolejka.setUprzywilejowana(RandomUtils.getRandomBooleanWithProbability(Constants.PRAWDOPODOBIENSTWO_OTWARCIA_KASY_UPRZYWILEJOWANEJ));
 
         Interfejs.getInstance().getWszystkieKolejki().put(kolejka.getIdKolejki(), kolejka);
 
         try {
-            otworzKaseInteraction(idKolejki, false, kolejka.getSredniCzasObslugi());
+            otworzKaseInteraction(idKolejki, kolejka.isUprzywilejowana(), kolejka.getSredniCzasObslugi());
         } catch (RTIexception e) {
             logger.info("[OtworzKase] RTIException, nie można otworzyć kasy");
         }
@@ -302,8 +303,10 @@ public class KolejkaFederate {
     private void klientDoKolejkiReceived(Object[] data) {
         String idKlienta = (String) data[0];
         int iloscProduktow = (int) data[1];
-        Kolejka kolejka = Interfejs.getInstance().getNajkrotszaKolejka();
         Klient klient = new Klient(idKlienta, iloscProduktow, false);
+        Kolejka kolejka = klient.getIloscProduktow() <= 5
+                ? Interfejs.getInstance().getNajkrotszaUprzywilejowana()
+                : Interfejs.getInstance().getNajkrotszaKolejka();
 
         if (kolejka == null) {
             String idNowejKolejki = UUIDUtils.shortId();
