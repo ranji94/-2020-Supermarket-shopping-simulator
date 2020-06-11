@@ -48,10 +48,18 @@ public class KasaFederate {
     protected InteractionClassHandle koniecZakupowInteractionHandle;
     protected ParameterHandle idKlientaKoniecHandle;
     protected ParameterHandle idKasyKoniecHandle;
+
+    protected InteractionClassHandle statystykiKasaInteractionHandle;
+    protected ParameterHandle zakupionychTowarowKasaHandle;
+    protected ParameterHandle zwrotyTowarowKasaHandle;
+    protected ParameterHandle skorzystaloZUprzywilejowanejHandle;
+
     ////////////////////////////////////////////////////
 
     private boolean sklepIsOpen = true;
     private int sumaWszystkichZakupionychProduktow = 0;
+    private int sumaZwroconychProduktow = 0;
+    private int skorzystaloZKasyUprzywilejowanej = 0;
 
     private void waitForUser() {
         logger.info(" >>>>>>>>>> Press Enter to Continue <<<<<<<<<<");
@@ -216,6 +224,8 @@ public class KasaFederate {
                 }
                 fedamb.getExternalEvents().clear();
             }
+
+            wyslijStatystyki();
             advanceTime(timeStep);
             if (Constants.LOG_TIME_ADVANCE) logger.info(String.format("Time Advanced to %.1f", fedamb.federateTime));
         }
@@ -226,6 +236,11 @@ public class KasaFederate {
         koniecZakupowInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.KoniecZakupow");
         idKlientaKoniecHandle = rtiamb.getParameterHandle(koniecZakupowInteractionHandle, "idKlient");
         idKasyKoniecHandle = rtiamb.getParameterHandle(koniecZakupowInteractionHandle, "idKasy");
+
+        statystykiKasaInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.StatystykiKasa");
+        zakupionychTowarowKasaHandle = rtiamb.getParameterHandle(statystykiKasaInteractionHandle, "iloscZakupionychTowarow");
+        zwrotyTowarowKasaHandle = rtiamb.getParameterHandle(statystykiKasaInteractionHandle, "iloscZwrotow");
+        skorzystaloZUprzywilejowanejHandle = rtiamb.getParameterHandle(statystykiKasaInteractionHandle, "ileSkorzystaloZUprzywilejowanej");
 
         // SUBSCRIBED DECLARATIONS
         otworzKaseInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.OtworzKase");
@@ -242,6 +257,7 @@ public class KasaFederate {
         idKasyZamknijHandle = rtiamb.getParameterHandle(zamknijKaseInteractionHandle, "idKasy");
 
         // PUBLISHED
+        rtiamb.publishInteractionClass(statystykiKasaInteractionHandle);
         rtiamb.publishInteractionClass(koniecZakupowInteractionHandle);
 
         // SUBSCRIBED
@@ -270,17 +286,27 @@ public class KasaFederate {
     }
 
     private void klientDoKasyInteractionReceived(Object[] data) throws RTIexception {
-        Random rand = new Random();
         String idKasy = (String) data[0];
         String idKlient = (String) data[1];
+        int iloscProduktow = (int) data[2];
         logger.info(String.format("[KlientDoKasyInteractionReceived] Dane ktore przyszly idKasy: %s, idKlient: %s", idKasy, idKlient));
-        sumaWszystkichZakupionychProduktow += (int) data[2];
+
+        if (RandomUtils.getRandomBooleanWithProbability(Constants.PRAWDOPODOBIENSTWO_ZWROTU_TOWARU)) {
+            sumaZwroconychProduktow += iloscProduktow;
+        } else {
+            sumaWszystkichZakupionychProduktow += iloscProduktow;
+        }
 
         Kasa kasa = Interfejs.getInstance().getWszystkieKasy().get(idKasy);
         kasa.setIdAktualnyKlient(idKlient);
+
+        if(kasa.isUprzywilejowana()) {
+            skorzystaloZKasyUprzywilejowanej++;
+        }
+
         koniecZakupowInteraction(idKlient, kasa.getIdKasy());
 
-        logger.info(String.format("[KlientDoKasy] Klient %s dołączył do kasy %s. Kupionych w sumie produktów: %s", idKlient, idKasy, sumaWszystkichZakupionychProduktow));
+        logger.info(String.format("[KlientDoKasy] Klient %s dołączył do kasy %s. \n Kupionych w sumie produktów: %s \n Zwróconych w sumie produktów: %s", idKlient, idKasy, sumaWszystkichZakupionychProduktow, sumaZwroconychProduktow));
     }
 
     private void koniecZakupowInteraction(String idKlient, String idKasy) throws RTIexception {
@@ -297,6 +323,24 @@ public class KasaFederate {
         logger.info(String.format("[KoniecZakupowInteraction] Send interaction klientId: %s [TIME: %.1f]", idKlient, newTimeDouble));
 
         rtiamb.sendInteraction(koniecZakupowInteractionHandle, parameters, generateTag(), time);
+    }
+
+    private void wyslijStatystyki() throws RTIexception {
+        HLAinteger32BE zakupionychTowarowValue = encoder.createHLAinteger32BE(this.sumaWszystkichZakupionychProduktow);
+        HLAinteger32BE zwroconychTowarowValue = encoder.createHLAinteger32BE(this.sumaZwroconychProduktow);
+        HLAinteger32BE skorzystaloZUprzywilejowanejValue = encoder.createHLAinteger32BE(this.skorzystaloZKasyUprzywilejowanej);
+
+        ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(0);
+        parameters.put(zakupionychTowarowKasaHandle, zakupionychTowarowValue.toByteArray());
+        parameters.put(zwrotyTowarowKasaHandle, zwroconychTowarowValue.toByteArray());
+        parameters.put(skorzystaloZUprzywilejowanejHandle, skorzystaloZUprzywilejowanejValue.toByteArray());
+
+        double newTimeDouble = fedamb.federateTime + fedamb.federateLookahead;
+        LogicalTime time = TimeUtils.convertTime(newTimeDouble);
+
+        logger.info(String.format("[WyslijStatystyki] Wysłano najnowsze statystyki [TIME: %.1f]", newTimeDouble));
+
+        rtiamb.sendInteraction(statystykiKasaInteractionHandle, parameters, generateTag(), time);
     }
 
     //----------------------------------------------------------

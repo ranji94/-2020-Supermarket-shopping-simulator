@@ -46,6 +46,12 @@ public class SklepFederate {
     protected ParameterHandle idKlientaKolejkiHandle;
     protected ParameterHandle iloscProduktowDoKolejkiHandle;
 
+    protected InteractionClassHandle statystykiSklepuInteractionHandle;
+    protected ParameterHandle wszyscyKlienciSklepHandle;
+    protected ParameterHandle klienciNaZakupachSklepHandle;
+    protected ParameterHandle klienciWKolejkachSklepHandle;
+    protected ParameterHandle sumaKlientowPoZakupachHandle;
+
     //Subscribed Interactions
     protected InteractionClassHandle klientWchodziInteractionHandle;
     protected ParameterHandle idKlientWchodziHandle;
@@ -57,6 +63,7 @@ public class SklepFederate {
 
     private boolean stopSimulation = false;
     private boolean kolejkaPoczatkowaIstnieje = false;
+    private int sumaKlientowKtorzyZrobiliZakupy = 0;
 
     /////////////////////////////////////////////////////////////////////////
 
@@ -115,6 +122,8 @@ public class SklepFederate {
                     klientDoKolejkiInteraction(wylosowanyKlientId, Sklep.getInstance().getWszyscyKlienciWSklepie().get(wylosowanyKlientId).getIloscProduktow());
                 }
             }
+
+            wyslijStatystykiSklepu();
         }
     }
 
@@ -122,6 +131,8 @@ public class SklepFederate {
         Sklep.getInstance().getKlienciNaZakupach().remove(idKlient);
         Sklep.getInstance().getKlienciWKolejkach().remove(idKlient);
         Sklep.getInstance().getWszyscyKlienciWSklepie().remove(idKlient);
+
+        sumaKlientowKtorzyZrobiliZakupy++;
 
         logger.info(String.format("[KoniecZakupow] Klient %s zakończył zakupy i wyszedł ze sklepu.", idKlient));
     }
@@ -157,6 +168,12 @@ public class SklepFederate {
         iloscProduktowDoKolejkiHandle = rtiamb.getParameterHandle(klientDoKolejkiInteractionHandle, "iloscProduktow");
         idKlientaKolejkiHandle = rtiamb.getParameterHandle(klientDoKolejkiInteractionHandle, "idKlient");
 
+        statystykiSklepuInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.StatystykiSklep");
+        wszyscyKlienciSklepHandle = rtiamb.getParameterHandle(statystykiSklepuInteractionHandle, "wszyscyKlienci");
+        klienciNaZakupachSklepHandle = rtiamb.getParameterHandle(statystykiSklepuInteractionHandle, "naZakupach");
+        klienciWKolejkachSklepHandle = rtiamb.getParameterHandle(statystykiSklepuInteractionHandle, "klienciWKolejkach");
+        sumaKlientowPoZakupachHandle = rtiamb.getParameterHandle(statystykiSklepuInteractionHandle, "sumaKlientowPoZakupach");
+
         //SUBSCRIBED
         klientWchodziInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.KlientWchodzi");
         idKlientWchodziHandle = rtiamb.getParameterHandle(klientWchodziInteractionHandle, "idKlient");
@@ -171,6 +188,7 @@ public class SklepFederate {
         rtiamb.publishInteractionClass(otworzKolejkeInteractionHandle);
         rtiamb.publishInteractionClass(zamknijKolejkeInteractionHandle);
         rtiamb.publishInteractionClass(klientDoKolejkiInteractionHandle);
+        rtiamb.publishInteractionClass(statystykiSklepuInteractionHandle);
     }
 
     private void klientDoKolejkiInteraction(String klientId, int iloscProduktow) throws RTIexception {
@@ -201,6 +219,28 @@ public class SklepFederate {
         logger.info(String.format("[OtworzKolejkeInteraction] Send interaction, kolejkaId: %s [TIME: %.1f]", kolejkaId, newTimeDouble));
 
         rtiamb.sendInteraction(otworzKolejkeInteractionHandle, parameters, generateTag(), time);
+    }
+
+    private void wyslijStatystykiSklepu() throws RTIexception {
+        Sklep sklep = Sklep.getInstance();
+
+        HLAinteger32BE sumaWszystkichKlientowValue = encoder.createHLAinteger32BE(sklep.getSumaWszystkichKlientow());
+        HLAinteger32BE sumaKlientowNaZakupachValue = encoder.createHLAinteger32BE(sklep.getSumaKlientowNaZakupach());
+        HLAinteger32BE sumaKlientowWKolejkachValue = encoder.createHLAinteger32BE(sklep.getSumaKlientowKolejka());
+        HLAinteger32BE sumaWszystkichObsluzonychValue = encoder.createHLAinteger32BE(this.sumaKlientowKtorzyZrobiliZakupy);
+
+        ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(0);
+        parameters.put(wszyscyKlienciSklepHandle, sumaWszystkichKlientowValue.toByteArray());
+        parameters.put(klienciNaZakupachSklepHandle, sumaKlientowNaZakupachValue.toByteArray());
+        parameters.put(klienciWKolejkachSklepHandle, sumaKlientowWKolejkachValue.toByteArray());
+        parameters.put(sumaKlientowPoZakupachHandle, sumaWszystkichObsluzonychValue.toByteArray());
+
+        double newTimeDouble = fedamb.federateTime + fedamb.federateLookahead;
+        LogicalTime time = TimeUtils.convertTime(newTimeDouble);
+
+        logger.info(String.format("[StatsInteraction] Zaktualizowano statystyki sklepu [TIME: %.1f]", newTimeDouble));
+
+        rtiamb.sendInteraction(statystykiSklepuInteractionHandle, parameters, generateTag(), time);
     }
 
     private void zamknijKolejkeInteraction(String kolejkaId) throws RTIexception {
