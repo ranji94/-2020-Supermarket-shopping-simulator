@@ -57,6 +57,23 @@ public class Interfejs {
         return najkrotsza;
     }
 
+    public Kolejka getNajkrotszaUprzywilejowana() {
+        int shortestQueueLong = Integer.MAX_VALUE;
+        Kolejka najkrotsza = null;
+
+        for(Map.Entry<String, Kolejka> q : wszystkieKolejki.entrySet()) {
+            if(q.getValue().getDlugoscKolejki() < shortestQueueLong) {
+                shortestQueueLong = q.getValue().getDlugoscKolejki();
+
+                if(q.getValue().isUprzywilejowana()) {
+                    najkrotsza = q.getValue();
+                }
+            }
+        }
+
+        return najkrotsza != null ? najkrotsza : getNajkrotszaKolejka();
+    }
+
     public void setWszystkieKolejki(Map<String, Kolejka> wszystkieKolejki) {
         this.wszystkieKolejki = wszystkieKolejki;
     }

@@ -7,6 +7,7 @@ public class Kolejka {
     private String idKasy;
     private int sredniCzasObslugi;
     private Queue<Klient> listaKlientow = new LinkedList<>();
+    private boolean uprzywilejowana;
 
     public Kolejka() {}
 
@@ -48,6 +49,14 @@ public class Kolejka {
 
     public void setListaKlientow(Queue<Klient> listaKlientow) {
         this.listaKlientow = listaKlientow;
+    }
+
+    public boolean isUprzywilejowana() {
+        return uprzywilejowana;
+    }
+
+    public void setUprzywilejowana(boolean uprzywilejowana) {
+        this.uprzywilejowana = uprzywilejowana;
     }
 
     @Override

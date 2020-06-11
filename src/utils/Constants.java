@@ -10,6 +10,7 @@ public class Constants {
     public static float PRAWDOPODOBIENSTWO_ZAKONCZENIA_ZAKUPOW = 0.2f;
     public static int MAX_DLUGOSC_KOLEJKI = 10;
     public static int MAX_PRODUKTOW_KLIENTA = 40;
+    public static float PRAWDOPODOBIENSTWO_OTWARCIA_KASY_UPRZYWILEJOWANEJ = 0.1f;
 
     public static boolean LOG_TIME_ADVANCE = true;
     public static boolean LOG_TIME_REQUEST = false;
