@@ -6,12 +6,6 @@ public class ExternalEvent<T> {
 
     public enum EventType {
         KLIENT_WCHODZI,
-        WYZNACZ_KOLEJKE,
-        KLIENT_OBSLUZONY,
-        ZADANIE_POLICZENIE,
-        PRZEKIEROWANIE_KLIENTA,
-        ZWROCENIE_LICZBY_PRODUKTOW,
-        KLIENT_WYSZEDL,
         ZAMKNIJ_KASE,
         OTWORZ_KASE,
         KONIEC_ZAKUPOW,
@@ -19,7 +13,10 @@ public class ExternalEvent<T> {
         OTWORZ_KOLEJKE,
         ZAMKNIJ_KOLEJKE,
         KLIENT_DO_KASY,
-        STOP_SIMULATION
+        STOP_SIMULATION,
+        STATYSTYKI_SKLEP,
+        STATYSTYKI_KOLEJKA,
+        STATYSTYKI_KASA
     }
 
     private T data;

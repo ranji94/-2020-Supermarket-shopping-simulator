@@ -74,6 +74,18 @@ public class Interfejs {
         return najkrotsza != null ? najkrotsza : getNajkrotszaKolejka();
     }
 
+    public int getIloscUprzywilejowanychKolejek() {
+        int uprzywilejowanych = 0;
+
+        for(Map.Entry<String, Kolejka> q : wszystkieKolejki.entrySet()) {
+            if(q.getValue().isUprzywilejowana()) {
+                uprzywilejowanych++;
+            }
+        }
+
+        return uprzywilejowanych;
+    }
+
     public void setWszystkieKolejki(Map<String, Kolejka> wszystkieKolejki) {
         this.wszystkieKolejki = wszystkieKolejki;
     }

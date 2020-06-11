@@ -93,6 +93,43 @@ public class InterfejsFederateAmbassador extends NullFederateAmbassador {
 
             externalEvents.add(new ExternalEvent(null, ExternalEvent.EventType.STOP_SIMULATION, receiveTime));
         }
+
+        if (interactionClass.equals(federate.statystykiSklepuInteractionHandle)) {
+            double receiveTime = TimeUtils.convertTime(time);
+            logger.info(String.format("Receive interaction StatystykiSklep [TIME:%.1f]", receiveTime));
+            int wszyscyKlienci = encoder.toInteger32(theParameters.get(federate.wszyscyKlienciSklepHandle));
+            int naZakupach = encoder.toInteger32(theParameters.get(federate.klienciNaZakupachSklepHandle));
+            int wKolejkach = encoder.toInteger32(theParameters.get(federate.klienciWKolejkachSklepHandle));
+            int poZakupach = encoder.toInteger32(theParameters.get(federate.sumaKlientowPoZakupachHandle));
+
+            Object [] data = { wszyscyKlienci, naZakupach, wKolejkach, poZakupach };
+
+            externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.STATYSTYKI_SKLEP, receiveTime));
+        }
+
+        if (interactionClass.equals(federate.statystykiKolejkiInteractionHandle)) {
+            double receiveTime = TimeUtils.convertTime(time);
+            logger.info(String.format("Receive interaction StatystykiKolejka [TIME:%.1f]", receiveTime));
+            String wszyscyWKolejkach = encoder.toString(theParameters.get(federate.kolejkiIKlienciKolejkiHandle));
+            int sumaKolejek = encoder.toInteger32(theParameters.get(federate.iloscKolejekKolejkiHandle));
+            int uprzywilejowanychKolejek = encoder.toInteger32(theParameters.get(federate.iloscUprzywilejowanychKolejkiHandle));
+
+            Object [] data = { wszyscyWKolejkach, sumaKolejek, uprzywilejowanychKolejek };
+
+            externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.STATYSTYKI_KOLEJKA, receiveTime));
+        }
+
+        if (interactionClass.equals(federate.statystykiKasaInteractionHandle)) {
+            double receiveTime = TimeUtils.convertTime(time);
+            logger.info(String.format("Receive interaction StatystykiKasa [TIME:%.1f]", receiveTime));
+            int zakupionychTowarow = encoder.toInteger32(theParameters.get(federate.zakupionychTowarowKasaHandle));
+            int zwroconychTowarow = encoder.toInteger32(theParameters.get(federate.zwrotyTowarowKasaHandle));
+            int skorzystaloZUprzywilejowanej = encoder.toInteger32(theParameters.get(federate.skorzystaloZUprzywilejowanej));
+
+            Object [] data = { zakupionychTowarow, zwroconychTowarow, skorzystaloZUprzywilejowanej };
+
+            externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.STATYSTYKI_KASA, receiveTime));
+        }
     }
 
     @Override

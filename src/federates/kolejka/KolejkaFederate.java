@@ -46,6 +46,11 @@ public class KolejkaFederate {
     protected ParameterHandle idKasyDoKasyHandle;
     protected ParameterHandle iloscProduktowDoKasyHandle;
 
+    protected InteractionClassHandle statystykiKolejkiInteractionHandle;
+    protected ParameterHandle kolejkiIKlienciKolejkiHandle;
+    protected ParameterHandle iloscKolejekKolejkiHandle;
+    protected ParameterHandle iloscUprzywilejowanychKolejkiHandle;
+
     // Interactions Subscribed
     protected InteractionClassHandle otworzKolejkeInteractionHandle;
     protected ParameterHandle idKolejkiOtworzSubscribedHandle;
@@ -63,6 +68,7 @@ public class KolejkaFederate {
     /////////////////////////////////////////////////
 
     private boolean sklepIsOpen = true;
+    private String wizualizacjaKolejek = "";
 
     private void waitForUser() {
         logger.info(" >>>>>>>>>> Press Enter to Continue <<<<<<<<<<");
@@ -244,8 +250,11 @@ public class KolejkaFederate {
                     dlugosciWszystkichKolejek.add(q.getValue().getDlugoscKolejki());
                 }
 
+                wizualizacjaKolejek = dlugosciWszystkichKolejek.toString();
                 logger.info(String.format("[StatusKolejek] Lista kolejek i osób w nich: %s", dlugosciWszystkichKolejek));
             }
+
+            wyslijStatystyki();
         }
     }
 
@@ -344,6 +353,11 @@ public class KolejkaFederate {
         idKasyDoKasyHandle = rtiamb.getParameterHandle(klientDoKasyInteractionHandle, "idKasy");
         iloscProduktowDoKasyHandle = rtiamb.getParameterHandle(klientDoKasyInteractionHandle, "iloscProduktow");
 
+        statystykiKolejkiInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.StatystykiKolejka");
+        kolejkiIKlienciKolejkiHandle = rtiamb.getParameterHandle(statystykiKolejkiInteractionHandle, "kolejkiIKlienci");
+        iloscKolejekKolejkiHandle = rtiamb.getParameterHandle(statystykiKolejkiInteractionHandle, "iloscKolejek");
+        iloscUprzywilejowanychKolejkiHandle = rtiamb.getParameterHandle(statystykiKolejkiInteractionHandle, "iloscKolejekUprzywilejowanych");
+
         // SUBSCRIBED
         otworzKolejkeInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.OtworzKolejke");
         idKolejkiOtworzSubscribedHandle = rtiamb.getParameterHandle(otworzKolejkeInteractionHandle, "idKolejki");
@@ -363,6 +377,7 @@ public class KolejkaFederate {
         rtiamb.publishInteractionClass(otworzKaseInteractionHandle);
         rtiamb.publishInteractionClass(zamknijKaseInteractionHandle);
         rtiamb.publishInteractionClass(klientDoKasyInteractionHandle);
+        rtiamb.publishInteractionClass(statystykiKolejkiInteractionHandle);
 
         rtiamb.subscribeInteractionClass(otworzKolejkeInteractionHandle);
         rtiamb.subscribeInteractionClass(koniecZakupowInteractionHandle);
@@ -400,6 +415,24 @@ public class KolejkaFederate {
         logger.info(String.format("[ZamknijKaseInteraction] Send interaction, kasaId and kolejkaId: %s [TIME: %.1f]", kasaKolejkaId, newTimeDouble));
 
         rtiamb.sendInteraction(zamknijKaseInteractionHandle, parameters, generateTag(), time);
+    }
+
+    private void wyslijStatystyki() throws RTIexception {
+        HLAunicodeString wizualizacjaKolejekValue = encoder.createHLAunicodeString(this.wizualizacjaKolejek);
+        HLAinteger32BE iloscKolejekValue = encoder.createHLAinteger32BE(Interfejs.getInstance().getWszystkieKolejki().size());
+        HLAinteger32BE iloscKolejekUprzywilejowanychValue = encoder.createHLAinteger32BE(Interfejs.getInstance().getIloscUprzywilejowanychKolejek());
+
+        ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(0);
+        parameters.put(kolejkiIKlienciKolejkiHandle, wizualizacjaKolejekValue.toByteArray());
+        parameters.put(iloscKolejekKolejkiHandle, iloscKolejekValue.toByteArray());
+        parameters.put(iloscUprzywilejowanychKolejkiHandle, iloscKolejekUprzywilejowanychValue.toByteArray());
+
+        double newTimeDouble = fedamb.federateTime + fedamb.federateLookahead;
+        LogicalTime time = TimeUtils.convertTime(newTimeDouble);
+
+        logger.info(String.format("[WyslijStatystyki] Wysłano najnowsze statystyki [TIME: %.1f]", newTimeDouble));
+
+        rtiamb.sendInteraction(statystykiKolejkiInteractionHandle, parameters, generateTag(), time);
     }
 
     private void klientDoKasyInteraction(String idKasy, String idKlient, int iloscProduktow) throws RTIexception {

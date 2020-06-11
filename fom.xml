@@ -28,6 +28,73 @@
             <name>HLAinteractionRoot</name>
 
             <interactionClass>
+                <name>StatystykiSklep</name>
+                <sharing>PublishSubscribe</sharing>
+                <dimensions/>
+                <transportation>HLAreliable</transportation>
+                <order>TimeStamp</order>
+                <semantics></semantics>
+                <parameter>
+                    <name>wszyscyKlienci</name>
+                    <dataType>HLAinteger32BE</dataType>
+                </parameter>
+                <parameter>
+                    <name>naZakupach</name>
+                    <dataType>HLAinteger32BE</dataType>
+                </parameter>
+                <parameter>
+                    <name>klienciWKolejkach</name>
+                    <dataType>HLAinteger32BE</dataType>
+                </parameter>
+                <parameter>
+                    <name>sumaKlientowPoZakupach</name>
+                    <dataType>HLAinteger32BE</dataType>
+                </parameter>
+            </interactionClass>
+
+            <interactionClass>
+                <name>StatystykiKolejka</name>
+                <sharing>PublishSubscribe</sharing>
+                <dimensions/>
+                <transportation>HLAreliable</transportation>
+                <order>TimeStamp</order>
+                <semantics></semantics>
+                <parameter>
+                    <name>kolejkiIKlienci</name>
+                    <dataType>HLAunicodeString</dataType>
+                </parameter>
+                <parameter>
+                    <name>iloscKolejek</name>
+                    <dataType>HLAinteger32BE</dataType>
+                </parameter>
+                <parameter>
+                    <name>iloscKolejekUprzywilejowanych</name>
+                    <dataType>HLAinteger32BE</dataType>
+                </parameter>
+            </interactionClass>
+
+            <interactionClass>
+                <name>StatystykiKasa</name>
+                <sharing>PublishSubscribe</sharing>
+                <dimensions/>
+                <transportation>HLAreliable</transportation>
+                <order>TimeStamp</order>
+                <semantics></semantics>
+                <parameter>
+                    <name>iloscZakupionychTowarow</name>
+                    <dataType>HLAinteger32BE</dataType>
+                </parameter>
+                <parameter>
+                    <name>iloscZwrotow</name>
+                    <dataType>HLAinteger32BE</dataType>
+                </parameter>
+                <parameter>
+                    <name>ileSkorzystaloZUprzywilejowanej</name>
+                    <dataType>HLAinteger32BE</dataType>
+                </parameter>
+            </interactionClass>
+
+            <interactionClass>
                 <name>KlientWchodzi</name>
                 <sharing>PublishSubscribe</sharing>
                 <dimensions/>
@@ -37,75 +104,6 @@
                 <parameter>
                     <name>idKlient</name>
                     <dataType>HLAunicodeString</dataType>
-                </parameter>
-            </interactionClass>
-
-            <interactionClass>
-                <name>WyznaczKolejke</name>
-                <sharing>PublishSubscribe</sharing>
-                <dimensions/>
-                <transportation>HLAreliable</transportation>
-                <order>TimeStamp</order>
-                <semantics></semantics>
-                <parameter>
-                    <name>maxKolejka</name>
-                    <dataType>HLAunicodeString</dataType>
-                </parameter>
-            </interactionClass>
-
-            <interactionClass>
-                <name>KlientObsluzony</name>
-                <sharing>PublishSubscribe</sharing>
-                <dimensions/>
-                <transportation>HLAreliable</transportation>
-                <order>TimeStamp</order>
-                <semantics></semantics>
-                <parameter>
-                    <name>idKlient</name>
-                    <dataType>HLAunicodeString</dataType>
-                </parameter>
-            </interactionClass>
-
-            <interactionClass>
-                <name>ZadaniePoliczenia</name>
-                <sharing>PublishSubscribe</sharing>
-                <dimensions/>
-                <transportation>HLAreliable</transportation>
-                <order>TimeStamp</order>
-                <semantics></semantics>
-                <parameter>
-                    <name>idKlient</name>
-                    <dataType>HLAunicodeString</dataType>
-                </parameter>
-            </interactionClass>
-
-            <interactionClass>
-                <name>PrzekierowanieKlienta</name>
-                <sharing>PublishSubscribe</sharing>
-                <dimensions/>
-                <transportation>HLAreliable</transportation>
-                <order>TimeStamp</order>
-                <semantics></semantics>
-                <parameter>
-                    <name>idKlient</name>
-                    <dataType>HLAunicodeString</dataType>
-                </parameter>
-            </interactionClass>
-
-            <interactionClass>
-                <name>ZwrocenieLiczbyProduktow</name>
-                <sharing>PublishSubscribe</sharing>
-                <dimensions/>
-                <transportation>HLAreliable</transportation>
-                <order>TimeStamp</order>
-                <semantics></semantics>
-                <parameter>
-                    <name>idKlient</name>
-                    <dataType>HLAunicodeString</dataType>
-                </parameter>
-                <parameter>
-                    <name>iloscProduktow</name>
-                    <dataType>HLAinteger32BE</dataType>
                 </parameter>
             </interactionClass>
 
