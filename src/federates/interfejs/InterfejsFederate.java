@@ -2,6 +2,9 @@ package federates.interfejs;
 
 import entity.Interfejs;
 import events.ExternalEvent;
+import gui.GUIController;
+import gui.GUIHandler;
+import gui.GUI;
 import hla.rti1516e.*;
 import hla.rti1516e.encoding.HLAunicodeString;
 import hla.rti1516e.exceptions.FederatesCurrentlyJoined;
@@ -11,6 +14,8 @@ import hla.rti1516e.exceptions.RTIexception;
 import utils.*;
 
 import javax.lang.model.type.ArrayType;
+import javax.swing.*;
+import java.awt.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
@@ -47,6 +52,8 @@ public class InterfejsFederate {
 
     protected InteractionClassHandle stopSimulationInteractionHandle;
 
+    private GUIHandler guihandler;
+
     private boolean sklepIsOpen = true;
 
     private int wszyscyWSklepie = 0;
@@ -59,6 +66,7 @@ public class InterfejsFederate {
     private int zakupionychTowarow = 0;
     private int zwroconychTowarow = 0;
     private int skorzystaloZKasyUprzywilejowanej = 0;
+    private int maxDlugoscKas=0;
 
     private void waitForUser()
     {
@@ -275,6 +283,10 @@ public class InterfejsFederate {
         sumaWKolejkach = wKolejkach;
         sumaWszystkichObsluzonych = poZakupach;
 
+        guihandler.addWszyscyWSklepie(wszyscyWSklepie);
+        guihandler.addWszyscyNaZakupach(sumaNaZakupach);
+        guihandler.addWszyscyWKolejce(sumaWKolejkach);
+        guihandler.addWszyscyObsluzeni(sumaWszystkichObsluzonych);
     }
 
     private void updateKolejkaStats(Object [] data) {
@@ -285,6 +297,15 @@ public class InterfejsFederate {
         klienciWKolejkach = wszyscyWKolejkach;
         this.sumaKolejek = sumaKolejek;
         kolejekUprzywilejowanych = sumaKolejekUprzywilejowanych;
+
+        if(maxDlugoscKas<sumaKolejek){
+            maxDlugoscKas=sumaKolejek;
+            guihandler.addMaxDlugoscKolejek(maxDlugoscKas);
+        }
+
+        guihandler.addLiczbeKolejek(sumaKolejek);
+        guihandler.obrazowanieKolejek(wszyscyWKolejkach);
+        guihandler.addKlienciUprzywilejowani(kolejekUprzywilejowanych);
     }
 
     private void updateKasaStats(Object [] data) {
@@ -295,6 +316,10 @@ public class InterfejsFederate {
         this.zakupionychTowarow = zakupionychTowarow;
         this.zwroconychTowarow = zwroconychTowarow;
         skorzystaloZKasyUprzywilejowanej = skorzystaloZUprzywilejowanej;
+
+        guihandler.addZakupionychTowarow(zakupionychTowarow);
+        guihandler.addZwroconeTowary(zwroconychTowarow);
+        guihandler.addKlienciUprzywilejowani(skorzystaloZKasyUprzywilejowanej);
     }
 
     private void publishAndSubscribe() throws RTIexception
@@ -332,10 +357,16 @@ public class InterfejsFederate {
         rtiamb.sendInteraction(stopSimulationInteractionHandle, parameters, generateTag(), time);
     }
 
+    public  void setGuiHandler(GUIController newOne){
+        this.guihandler=newOne;
+    }
+
+
+
     //----------------------------------------------------------
     //                     STATIC METHODS
     //----------------------------------------------------------
-    public static void main( String[] args )
+    public static void main(String[] args)
     {
         String federateName = "InterfejsFederate";
         if( args.length != 0 ) {
@@ -343,7 +374,9 @@ public class InterfejsFederate {
         }
 
         try {
-            new InterfejsFederate().runFederate( federateName );
+            InterfejsFederate interfejsFederate = new InterfejsFederate();
+            EventQueue.invokeLater(() -> GUI.start(interfejsFederate));
+            interfejsFederate.runFederate(federateName);
         }
         catch( Exception rtie ) {
             rtie.printStackTrace();
