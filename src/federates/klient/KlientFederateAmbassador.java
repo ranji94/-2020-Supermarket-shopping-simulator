@@ -101,6 +101,13 @@ public class KlientFederateAmbassador extends NullFederateAmbassador {
 
             externalEvents.add(new ExternalEvent(idKlient, ExternalEvent.EventType.KONIEC_ZAKUPOW, receiveTime));
         }
+
+        if (interactionClass.equals(federate.zamknijDrzwiInteractionHandle)) {
+            double receiveTime = TimeUtils.convertTime(time);
+            logger.info(String.format("Receive interaction ZamknijDrzwi [TIME:%.1f]", receiveTime));
+
+            externalEvents.add(new ExternalEvent(null, ExternalEvent.EventType.ZAMKNIJ_DRZWI, receiveTime));
+        }
     }
 
     @Override

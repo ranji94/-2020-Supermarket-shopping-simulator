@@ -30,14 +30,17 @@ public class KlientFederate {
     protected InteractionClassHandle klientWchodziInteractionHandle;
     protected ParameterHandle idKlientaHandle;
 
-    protected InteractionClassHandle stopSimulationInteractionHandle;
-
     // Interactions SUBSCRIBED
     protected InteractionClassHandle koniecZakupowInteractionHandle;
     protected ParameterHandle idKlientKoniecHandle;
 
+    protected InteractionClassHandle zamknijDrzwiInteractionHandle;
+
+    protected InteractionClassHandle stopSimulationInteractionHandle;
+
     private int clientsEnteredShop = 0;
     private boolean sklepIsOpen = true;
+    private boolean KlienciNaplywaja = true;
 
     private void waitForUser()
     {
@@ -196,12 +199,13 @@ public class KlientFederate {
             advanceTime(randomTime());
             if (Constants.LOG_TIME_ADVANCE) logger.info(String.format("Time Advanced to %.1f", fedamb.federateTime));
 
-            if(Constants.MAX_KLIENTOW_W_SKLEPIE > clientsEnteredShop) {
+            if((Constants.MAX_KLIENTOW_W_SKLEPIE > clientsEnteredShop)&&KlienciNaplywaja) {
                 clientsEnteredShop++;
                 klientWchodziInteraction();
             }
             else {
-                logger.info("Za dużo klientów w sklepie. Oczekiwanie na wejście.");
+                if(KlienciNaplywaja) logger.info("Za dużo klientów w sklepie. Oczekiwanie na wejście.");
+                else logger.info("Sklep zamknięty.");
             }
 
             if (fedamb.getExternalEvents().size() > 0) {
@@ -211,6 +215,12 @@ public class KlientFederate {
                         case KONIEC_ZAKUPOW:
                             String idKlientKoniec = (String) externalEvent.getData();
                             koniecZakupowInteractionReceived(idKlientKoniec);
+                            break;
+                        case ZAMKNIJ_DRZWI:
+                            KlienciNaplywaja=false;
+                            break;
+                        case STOP_SIMULATION:
+                            sklepIsOpen=false;
                             break;
                     }
                 }
@@ -238,7 +248,15 @@ public class KlientFederate {
         koniecZakupowInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.KoniecZakupow");
         idKlientKoniecHandle = rtiamb.getParameterHandle(koniecZakupowInteractionHandle, "idKlient");
 
+        zamknijDrzwiInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.ZamknijDrzwi");
+
+        stopSimulationInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.StopSimulation");
+
+
+
         rtiamb.subscribeInteractionClass(koniecZakupowInteractionHandle);
+        rtiamb.subscribeInteractionClass(zamknijDrzwiInteractionHandle);
+        rtiamb.subscribeInteractionClass(stopSimulationInteractionHandle);
         /////////////////////////////////////
 
         rtiamb.publishInteractionClass(klientWchodziInteractionHandle);

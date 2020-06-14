@@ -1,10 +1,15 @@
 package gui;
 
+import federates.interfejs.InterfejsFederate;
+import hla.rti1516e.exceptions.RTIexception;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 
 public class GUIController implements GUIHandler {
+
+    private InterfejsFederate fed;
 
     @FXML
     private Label wszyscywsklepie;
@@ -39,6 +44,14 @@ public class GUIController implements GUIHandler {
     @FXML
     private Label klienciUprzywilejowani;
 
+    @FXML
+    private Button b1;
+
+    public void setFed(InterfejsFederate fed) {
+        this.fed = fed;
+    }
+
+    @Override
     public void addWszyscyWSklepie(int wszyscyklienci){
         Platform.runLater(()->{wszyscywsklepie.setText("Klienci w sklepie: "+wszyscyklienci);});
     }
@@ -93,4 +106,8 @@ public class GUIController implements GUIHandler {
         Platform.runLater(()->{klienciUprzywilejowani.setText("Klienci obsłużeni w kasie uprzywilejowanej: "+klienciUprz);});
     }
 
+    public void zamknijDrzwi() throws RTIexception {
+        fed.zamknijDrzwiSklepu();
+        b1.setDisable(true);
+    }
 }

@@ -2,6 +2,8 @@ package gui;
 
 import federates.interfejs.InterfejsFederate;
 import javafx.application.Application;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -23,10 +25,12 @@ public class GUI extends Application {
         Parent root = loader.load();
         GUIController controller = loader.getController();
         fed.setGuiHandler(controller);
+        controller.setFed(fed);
 
         Scene scene = new Scene(root,1024,600);
         primaryStage.setTitle("Symulacja sklepu");
         primaryStage.setScene(scene);
         primaryStage.show();
     }
+
 }

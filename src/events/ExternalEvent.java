@@ -16,7 +16,8 @@ public class ExternalEvent<T> {
         STOP_SIMULATION,
         STATYSTYKI_SKLEP,
         STATYSTYKI_KOLEJKA,
-        STATYSTYKI_KASA
+        STATYSTYKI_KASA,
+        ZAMKNIJ_DRZWI
     }
 
     private T data;

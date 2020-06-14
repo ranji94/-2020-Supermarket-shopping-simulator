@@ -73,8 +73,8 @@ public class SklepFederate {
     }
 
     private void run() throws RTIexception {
-        while (!stopSimulation) {
-            Sklep sklep = Sklep.getInstance();
+        Sklep sklep = Sklep.getInstance();
+        while ((!stopSimulation)&&(sklep.getSumaWszystkichKlientow()!=0)) {
             logger.info(String.format("[SklepFederate] Wszyscy klienci w sklepie: %s, klienci w kolejkach: %s, klienci na zakupach: %s",
                     sklep.getSumaWszystkichKlientow(),
                     sklep.getSumaKlientowKolejka(),
@@ -125,6 +125,19 @@ public class SklepFederate {
 
             wyslijStatystykiSklepu();
         }
+        stopSimulation();
+    }
+
+    private void stopSimulation() throws RTIexception {
+
+        ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(0);
+
+        double newTimeDouble = fedamb.federateTime + fedamb.federateLookahead;
+        LogicalTime time = TimeUtils.convertTime(newTimeDouble);
+
+        logger.info(String.format("[StopSimulationInteraction] Send interaction [TIME: %.1f]", newTimeDouble));
+
+        rtiamb.sendInteraction(stopSimulationInteractionHandle, parameters, generateTag(), time);
     }
 
     private void koniecZakupowInteractionReceived(String idKlient) {
@@ -173,6 +186,8 @@ public class SklepFederate {
         klienciNaZakupachSklepHandle = rtiamb.getParameterHandle(statystykiSklepuInteractionHandle, "naZakupach");
         klienciWKolejkachSklepHandle = rtiamb.getParameterHandle(statystykiSklepuInteractionHandle, "klienciWKolejkach");
         sumaKlientowPoZakupachHandle = rtiamb.getParameterHandle(statystykiSklepuInteractionHandle, "sumaKlientowPoZakupach");
+
+
 
         //SUBSCRIBED
         klientWchodziInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.KlientWchodzi");

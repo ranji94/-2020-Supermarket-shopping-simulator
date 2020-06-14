@@ -50,6 +50,7 @@
             <Label fx:id="zakupionychTowarow" text="Liczba zakupionych towarów: 0" GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.rowIndex="2" />
             <Label fx:id="zwroconeTowaryKasa" text="Liczba zwróconych towarów: 0" GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.rowIndex="3" />
             <Label fx:id="klienciUprzywilejowani" text="Klienci obsłużeni w kasie uprzywilejowanej: 0" GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.rowIndex="4" />
+            <Button fx:id="b1" mnemonicParsing="false" onAction="#zamknijDrzwi" text="Zamknij Drzwi" GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.rowIndex="5" />
          </children>
       </GridPane>
    </children>

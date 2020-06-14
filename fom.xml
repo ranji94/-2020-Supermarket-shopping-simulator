@@ -223,6 +223,15 @@
             </interactionClass>
 
             <interactionClass>
+                <name>zamknijDrzwi</name>
+                <sharing>PublishSubscribe</sharing>
+                <dimensions/>
+                <transportation>HLAreliable</transportation>
+                <order>TimeStamp</order>
+                <semantics></semantics>
+            </interactionClass>
+
+            <interactionClass>
                 <name>StopSimulation</name>
                 <sharing>PublishSubscribe</sharing>
                 <dimensions/>

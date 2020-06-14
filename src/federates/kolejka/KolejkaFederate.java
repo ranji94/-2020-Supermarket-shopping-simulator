@@ -3,7 +3,6 @@ package federates.kolejka;
 import entity.Interfejs;
 import entity.Klient;
 import entity.Kolejka;
-import entity.Sklep;
 import events.ExternalEvent;
 import hla.rti1516e.*;
 import hla.rti1516e.encoding.HLAboolean;
@@ -18,7 +17,6 @@ import utils.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
-import java.net.ContentHandler;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
@@ -65,6 +63,8 @@ public class KolejkaFederate {
     protected InteractionClassHandle koniecZakupowInteractionHandle;
     protected ParameterHandle idKlientaKoniecHandle;
     protected ParameterHandle idKasyKoniecHandle;
+
+    protected InteractionClassHandle stopSimulationInteractionHandle;
     /////////////////////////////////////////////////
 
     private boolean sklepIsOpen = true;
@@ -224,6 +224,9 @@ public class KolejkaFederate {
                             Object[] koniecZakupowData = (Object[]) externalEvent.getData();
                             koniecZakupowInteractionReceived(koniecZakupowData);
                             break;
+                        case STOP_SIMULATION:
+                            sklepIsOpen=false;
+                            break;
                     }
                 }
                 fedamb.getExternalEvents().clear();
@@ -323,7 +326,7 @@ public class KolejkaFederate {
             kolejka = Interfejs.getInstance().getWszystkieKolejki().get(idNowejKolejki);
         }
 
-        if (kolejka.getDlugoscKolejki() >= Constants.MAX_DLUGOSC_KOLEJKI) {
+        if (kolejka.getDlugoscKolejki() >= Constants.MAX_DLUGOSC_KOLEJKI-1) {
             String idNowejKolejki = UUIDUtils.shortId();
             otworzKolejkeReceived(idNowejKolejki);
             kolejka = Interfejs.getInstance().getNajkrotszaKolejka();
@@ -358,6 +361,8 @@ public class KolejkaFederate {
         iloscKolejekKolejkiHandle = rtiamb.getParameterHandle(statystykiKolejkiInteractionHandle, "iloscKolejek");
         iloscUprzywilejowanychKolejkiHandle = rtiamb.getParameterHandle(statystykiKolejkiInteractionHandle, "iloscKolejekUprzywilejowanych");
 
+        stopSimulationInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.StopSimulation");
+
         // SUBSCRIBED
         otworzKolejkeInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.OtworzKolejke");
         idKolejkiOtworzSubscribedHandle = rtiamb.getParameterHandle(otworzKolejkeInteractionHandle, "idKolejki");
@@ -381,8 +386,10 @@ public class KolejkaFederate {
 
         rtiamb.subscribeInteractionClass(otworzKolejkeInteractionHandle);
         rtiamb.subscribeInteractionClass(koniecZakupowInteractionHandle);
-        rtiamb.subscribeInteractionClass(zamknijKaseInteractionHandle);
+        rtiamb.subscribeInteractionClass(zamknijKolejkeInteractionHandle);
         rtiamb.subscribeInteractionClass(klientDoKolejkiInteractionHandle);
+        rtiamb.subscribeInteractionClass(stopSimulationInteractionHandle);
+
     }
 
     private void otworzKaseInteraction(String kasaKolejkaId, boolean uprzywilejowana, int czasObslugi) throws RTIexception {

@@ -32,6 +32,8 @@ public class InterfejsFederate {
     private InterfejsFederateAmbassador fedamb;
     protected EncoderDecoder encoder;
 
+    protected InteractionClassHandle zamknijDrzwiInteractionHandle;
+
     // SUBSCRIBED interactions
     protected InteractionClassHandle statystykiSklepuInteractionHandle;
     protected ParameterHandle wszyscyKlienciSklepHandle;
@@ -48,9 +50,10 @@ public class InterfejsFederate {
     protected ParameterHandle zakupionychTowarowKasaHandle;
     protected ParameterHandle zwrotyTowarowKasaHandle;
     protected ParameterHandle skorzystaloZUprzywilejowanej;
-    //////////////////////////////////////////////////
 
     protected InteractionClassHandle stopSimulationInteractionHandle;
+
+    //////////////////////////////////////////////////
 
     private GUIHandler guihandler;
 
@@ -67,6 +70,7 @@ public class InterfejsFederate {
     private int zwroconychTowarow = 0;
     private int skorzystaloZKasyUprzywilejowanej = 0;
     private int maxDlugoscKas=0;
+    private boolean zamknijDrzwi=false;
 
     private void waitForUser()
     {
@@ -225,6 +229,8 @@ public class InterfejsFederate {
             advanceTime(randomTime());
             if (Constants.LOG_TIME_ADVANCE) logger.info(String.format("Time Advanced to %.1f", fedamb.federateTime));
 
+            if(zamknijDrzwi)zamknijDrzwiInteractionSend();
+
             if (fedamb.getExternalEvents().size() > 0) {
                 fedamb.getExternalEvents().sort(new ExternalEvent.ExternalEventComparator());
                 for (ExternalEvent externalEvent : fedamb.getExternalEvents()) {
@@ -240,6 +246,9 @@ public class InterfejsFederate {
                         case STATYSTYKI_KOLEJKA:
                             Object[] dataKolejka = (Object[]) externalEvent.getData();
                             updateKolejkaStats(dataKolejka);
+                            break;
+                        case STOP_SIMULATION:
+                            sklepIsOpen=false;
                             break;
                     }
                 }
@@ -269,7 +278,6 @@ public class InterfejsFederate {
                     skorzystaloZKasyUprzywilejowanej));
         }
 
-        stopSimulation();
     }
 
     private void updateSklepStats(Object [] data) {
@@ -322,8 +330,23 @@ public class InterfejsFederate {
         guihandler.addKlienciUprzywilejowani(skorzystaloZKasyUprzywilejowanej);
     }
 
+    private void zamknijDrzwiInteractionSend() throws RTIexception{
+        ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(0);
+
+        double newTimeDouble = fedamb.federateTime + fedamb.federateLookahead;
+        LogicalTime time = TimeUtils.convertTime(newTimeDouble);
+
+        logger.info(String.format("[ZamknijDrzwiInteraction] Send interaction [TIME: %.1f]", newTimeDouble));
+
+        zamknijDrzwi=false;
+        rtiamb.sendInteraction(zamknijDrzwiInteractionHandle,parameters,generateTag(),time);
+    }
+
     private void publishAndSubscribe() throws RTIexception
     {
+        zamknijDrzwiInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.ZamknijDrzwi");
+
+
         statystykiSklepuInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.StatystykiSklep");
         wszyscyKlienciSklepHandle = rtiamb.getParameterHandle(statystykiSklepuInteractionHandle, "wszyscyKlienci");
         klienciNaZakupachSklepHandle = rtiamb.getParameterHandle(statystykiSklepuInteractionHandle, "naZakupach");
@@ -340,25 +363,23 @@ public class InterfejsFederate {
         zwrotyTowarowKasaHandle = rtiamb.getParameterHandle(statystykiKasaInteractionHandle, "iloscZwrotow");
         skorzystaloZUprzywilejowanej = rtiamb.getParameterHandle(statystykiKasaInteractionHandle, "ileSkorzystaloZUprzywilejowanej");
 
+        stopSimulationInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.StopSimulation");
+
+        rtiamb.publishInteractionClass(zamknijDrzwiInteractionHandle);
+
         rtiamb.subscribeInteractionClass(statystykiKolejkiInteractionHandle);
         rtiamb.subscribeInteractionClass(statystykiKasaInteractionHandle);
         rtiamb.subscribeInteractionClass(statystykiSklepuInteractionHandle);
+        rtiamb.subscribeInteractionClass(stopSimulationInteractionHandle);
     }
 
-    private void stopSimulation() throws RTIexception {
-
-        ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(0);
-
-        double newTimeDouble = fedamb.federateTime + fedamb.federateLookahead;
-        LogicalTime time = TimeUtils.convertTime(newTimeDouble);
-
-        logger.info(String.format("[StopSimulationInteraction] Send interaction [TIME: %.1f]", newTimeDouble));
-
-        rtiamb.sendInteraction(stopSimulationInteractionHandle, parameters, generateTag(), time);
-    }
 
     public  void setGuiHandler(GUIController newOne){
         this.guihandler=newOne;
+    }
+
+    public void zamknijDrzwiSklepu() throws RTIexception {
+        zamknijDrzwi=true;
     }
 
 

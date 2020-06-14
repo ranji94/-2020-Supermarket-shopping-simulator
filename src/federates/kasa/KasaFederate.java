@@ -2,7 +2,6 @@ package federates.kasa;
 
 import entity.Interfejs;
 import entity.Kasa;
-import entity.Sklep;
 import events.ExternalEvent;
 import hla.rti1516e.*;
 import hla.rti1516e.encoding.HLAinteger32BE;
@@ -18,7 +17,6 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ConcurrentModificationException;
 import java.util.Random;
 
 public class KasaFederate {
@@ -43,6 +41,8 @@ public class KasaFederate {
 
     protected InteractionClassHandle zamknijKaseInteractionHandle;
     protected ParameterHandle idKasyZamknijHandle;
+
+    protected InteractionClassHandle stopSimulationInteractionHandle;
 
     // PUBLISHED Interactions
     protected InteractionClassHandle koniecZakupowInteractionHandle;
@@ -220,6 +220,10 @@ public class KasaFederate {
                             String idKasyZamknij = (String) externalEvent.getData();
                             zamknijKaseInteractionReceived(idKasyZamknij);
                             break;
+
+                        case STOP_SIMULATION:
+                            sklepIsOpen=false;
+                            break;
                     }
                 }
                 fedamb.getExternalEvents().clear();
@@ -242,6 +246,7 @@ public class KasaFederate {
         zwrotyTowarowKasaHandle = rtiamb.getParameterHandle(statystykiKasaInteractionHandle, "iloscZwrotow");
         skorzystaloZUprzywilejowanejHandle = rtiamb.getParameterHandle(statystykiKasaInteractionHandle, "ileSkorzystaloZUprzywilejowanej");
 
+
         // SUBSCRIBED DECLARATIONS
         otworzKaseInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.OtworzKase");
         idKasyHandle = rtiamb.getParameterHandle(otworzKaseInteractionHandle, "idKasy");
@@ -256,6 +261,9 @@ public class KasaFederate {
         zamknijKaseInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.ZamknijKase");
         idKasyZamknijHandle = rtiamb.getParameterHandle(zamknijKaseInteractionHandle, "idKasy");
 
+        stopSimulationInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.StopSimulation");
+
+
         // PUBLISHED
         rtiamb.publishInteractionClass(statystykiKasaInteractionHandle);
         rtiamb.publishInteractionClass(koniecZakupowInteractionHandle);
@@ -264,6 +272,7 @@ public class KasaFederate {
         rtiamb.subscribeInteractionClass(otworzKaseInteractionHandle);
         rtiamb.subscribeInteractionClass(klientDoKasyInteractionHandle);
         rtiamb.subscribeInteractionClass(zamknijKaseInteractionHandle);
+        rtiamb.subscribeInteractionClass(stopSimulationInteractionHandle);
     }
 
     private void zamknijKaseInteractionReceived(String idKasy) {
