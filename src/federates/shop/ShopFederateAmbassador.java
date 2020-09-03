@@ -1,4 +1,4 @@
-package federates.interfejs;
+package federates.shop;
 
 import events.ExternalEvent;
 import hla.rti1516e.*;
@@ -11,10 +11,10 @@ import utils.TimeUtils;
 
 import java.util.ArrayList;
 
-public class InterfejsFederateAmbassador extends NullFederateAmbassador {
-    private static final Logger logger = new Logger("InterfejsFederateAmbassador");
+public class ShopFederateAmbassador extends NullFederateAmbassador {
+    private static final Logger logger = new Logger("ShopFederateAmbassador");
     private EncoderDecoder encoder;
-    private InterfejsFederate federate;
+    private ShopFederate federate;
 
     protected double federateTime        = 0.0;
     protected double federateLookahead   = 1.0;
@@ -28,7 +28,7 @@ public class InterfejsFederateAmbassador extends NullFederateAmbassador {
 
     private ArrayList<ExternalEvent> externalEvents = new ArrayList<>();
 
-    public InterfejsFederateAmbassador(InterfejsFederate federate) throws RTIexception {
+    public ShopFederateAmbassador(ShopFederate federate) throws RTIexception {
         this.federate = federate;
         this.encoder = new EncoderDecoder();
     }
@@ -46,14 +46,14 @@ public class InterfejsFederateAmbassador extends NullFederateAmbassador {
     @Override
     public void announceSynchronizationPoint(String label, byte[] tag) throws FederateInternalError {
         logger.info( "Synchronization point announced: " + label );
-        if( label.equals(InterfejsFederate.READY_TO_RUN) )
+        if( label.equals(ShopFederate.READY_TO_RUN) )
             this.isAnnounced = true;
     }
 
     @Override
     public void federationSynchronized(String label, FederateHandleSet failedToSyncSet) throws FederateInternalError {
         logger.info( "Federation Synchronized: " + label );
-        if( label.equals(InterfejsFederate.READY_TO_RUN) )
+        if( label.equals(ShopFederate.READY_TO_RUN) )
             this.isReadyToRun = true;
     }
 
@@ -87,48 +87,20 @@ public class InterfejsFederateAmbassador extends NullFederateAmbassador {
                                     SupplementalReceiveInfo receiveInfo )
             throws FederateInternalError
     {
-        if (interactionClass.equals(federate.stopSimulationInteractionHandle)) {
+        if (interactionClass.equals(federate.clientEnteredShopInteractionHandle)) {
             double receiveTime = TimeUtils.convertTime(time);
-            logger.info(String.format("Receive interaction StopSimulation [TIME:%.1f]", receiveTime));
+            String clientId = encoder.toString(theParameters.get(federate.clientIdEnteredHandle));
+            logger.info(String.format("Receive interaction ClientEnteredShop [TIME:%.1f]", receiveTime));
 
-            externalEvents.add(new ExternalEvent(null, ExternalEvent.EventType.STOP_SIMULATION, receiveTime));
+            externalEvents.add(new ExternalEvent(clientId, ExternalEvent.EventType.CLIENT_ENTERED_SHOP, receiveTime));
         }
 
-        if (interactionClass.equals(federate.statystykiSklepuInteractionHandle)) {
+        if (interactionClass.equals(federate.shoppingFinishedInteractionHandle)) {
             double receiveTime = TimeUtils.convertTime(time);
-            logger.info(String.format("Receive interaction StatystykiSklep [TIME:%.1f]", receiveTime));
-            int wszyscyKlienci = encoder.toInteger32(theParameters.get(federate.wszyscyKlienciSklepHandle));
-            int naZakupach = encoder.toInteger32(theParameters.get(federate.klienciNaZakupachSklepHandle));
-            int wKolejkach = encoder.toInteger32(theParameters.get(federate.klienciWKolejkachSklepHandle));
-            int poZakupach = encoder.toInteger32(theParameters.get(federate.sumaKlientowPoZakupachHandle));
+            logger.info(String.format("Receive interaction ShoppingFinished [TIME:%.1f]", receiveTime));
+            String clientId = encoder.toString(theParameters.get(federate.clientIdShoppingFinishedHandle));
 
-            Object [] data = { wszyscyKlienci, naZakupach, wKolejkach, poZakupach };
-
-            externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.STATYSTYKI_SKLEP, receiveTime));
-        }
-
-        if (interactionClass.equals(federate.statystykiKolejkiInteractionHandle)) {
-            double receiveTime = TimeUtils.convertTime(time);
-            logger.info(String.format("Receive interaction StatystykiKolejka [TIME:%.1f]", receiveTime));
-            String wszyscyWKolejkach = encoder.toString(theParameters.get(federate.kolejkiIKlienciKolejkiHandle));
-            int sumaKolejek = encoder.toInteger32(theParameters.get(federate.iloscKolejekKolejkiHandle));
-            int uprzywilejowanychKolejek = encoder.toInteger32(theParameters.get(federate.iloscUprzywilejowanychKolejkiHandle));
-
-            Object [] data = { wszyscyWKolejkach, sumaKolejek, uprzywilejowanychKolejek };
-
-            externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.STATYSTYKI_KOLEJKA, receiveTime));
-        }
-
-        if (interactionClass.equals(federate.statystykiKasaInteractionHandle)) {
-            double receiveTime = TimeUtils.convertTime(time);
-            logger.info(String.format("Receive interaction StatystykiKasa [TIME:%.1f]", receiveTime));
-            int zakupionychTowarow = encoder.toInteger32(theParameters.get(federate.zakupionychTowarowKasaHandle));
-            int zwroconychTowarow = encoder.toInteger32(theParameters.get(federate.zwrotyTowarowKasaHandle));
-            int skorzystaloZUprzywilejowanej = encoder.toInteger32(theParameters.get(federate.skorzystaloZUprzywilejowanej));
-
-            Object [] data = { zakupionychTowarow, zwroconychTowarow, skorzystaloZUprzywilejowanej };
-
-            externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.STATYSTYKI_KASA, receiveTime));
+            externalEvents.add(new ExternalEvent(clientId, ExternalEvent.EventType.SHOPPING_FINISHED, receiveTime));
         }
     }
 

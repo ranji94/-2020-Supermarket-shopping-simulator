@@ -15,11 +15,7 @@
         <useLimitation></useLimitation>
         <poc>
             <pocType>Author</pocType>
-            <pocName>Jedrzej Piasecki</pocName>
-        </poc>
-        <poc>
-            <pocType>Author</pocType>
-            <pocName>Adrian Stefaniak</pocName>
+            <pocName>Jedrzej Milosz Piasecki</pocName>
         </poc>
     </modelIdentification>
 
@@ -28,196 +24,196 @@
             <name>HLAinteractionRoot</name>
 
             <interactionClass>
-                <name>StatystykiSklep</name>
+                <name>ShopStats</name>
                 <sharing>PublishSubscribe</sharing>
                 <dimensions/>
                 <transportation>HLAreliable</transportation>
                 <order>TimeStamp</order>
                 <semantics></semantics>
                 <parameter>
-                    <name>wszyscyKlienci</name>
+                    <name>totalClientsInShop</name>
                     <dataType>HLAinteger32BE</dataType>
                 </parameter>
                 <parameter>
-                    <name>naZakupach</name>
+                    <name>totalClientsInShopping</name>
                     <dataType>HLAinteger32BE</dataType>
                 </parameter>
                 <parameter>
-                    <name>klienciWKolejkach</name>
+                    <name>totalClientsInCashQueues</name>
                     <dataType>HLAinteger32BE</dataType>
                 </parameter>
                 <parameter>
-                    <name>sumaKlientowPoZakupach</name>
+                    <name>totalClientsServiced</name>
                     <dataType>HLAinteger32BE</dataType>
                 </parameter>
             </interactionClass>
 
             <interactionClass>
-                <name>StatystykiKolejka</name>
+                <name>CashQueueStats</name>
                 <sharing>PublishSubscribe</sharing>
                 <dimensions/>
                 <transportation>HLAreliable</transportation>
                 <order>TimeStamp</order>
                 <semantics></semantics>
                 <parameter>
-                    <name>kolejkiIKlienci</name>
+                    <name>clientsInCashQueues</name>
                     <dataType>HLAunicodeString</dataType>
                 </parameter>
                 <parameter>
-                    <name>iloscKolejek</name>
+                    <name>totalCashQueuesCount</name>
                     <dataType>HLAinteger32BE</dataType>
                 </parameter>
                 <parameter>
-                    <name>iloscKolejekUprzywilejowanych</name>
+                    <name>totalCashQueuesPrivilegedCount</name>
                     <dataType>HLAinteger32BE</dataType>
                 </parameter>
             </interactionClass>
 
             <interactionClass>
-                <name>StatystykiKasa</name>
+                <name>CashRegisterStats</name>
                 <sharing>PublishSubscribe</sharing>
                 <dimensions/>
                 <transportation>HLAreliable</transportation>
                 <order>TimeStamp</order>
                 <semantics></semantics>
                 <parameter>
-                    <name>iloscZakupionychTowarow</name>
+                    <name>totalProductsBought</name>
                     <dataType>HLAinteger32BE</dataType>
                 </parameter>
                 <parameter>
-                    <name>iloscZwrotow</name>
+                    <name>totalProductsReturned</name>
                     <dataType>HLAinteger32BE</dataType>
                 </parameter>
                 <parameter>
-                    <name>ileSkorzystaloZUprzywilejowanej</name>
+                    <name>clientsUsedPrivilegedCashRegister</name>
                     <dataType>HLAinteger32BE</dataType>
                 </parameter>
             </interactionClass>
 
             <interactionClass>
-                <name>KlientWchodzi</name>
+                <name>ClientEnteredShop</name>
                 <sharing>PublishSubscribe</sharing>
                 <dimensions/>
                 <transportation>HLAreliable</transportation>
                 <order>TimeStamp</order>
                 <semantics></semantics>
                 <parameter>
-                    <name>idKlient</name>
-                    <dataType>HLAunicodeString</dataType>
-                </parameter>
-            </interactionClass>
-
-            <interactionClass>
-                <name>ZamknijKase</name>
-                <sharing>PublishSubscribe</sharing>
-                <dimensions/>
-                <transportation>HLAreliable</transportation>
-                <order>TimeStamp</order>
-                <semantics></semantics>
-                <parameter>
-                    <name>idKasy</name>
+                    <name>clientId</name>
                     <dataType>HLAunicodeString</dataType>
                 </parameter>
             </interactionClass>
 
             <interactionClass>
-                <name>OtworzKase</name>
+                <name>CloseCashRegister</name>
                 <sharing>PublishSubscribe</sharing>
                 <dimensions/>
                 <transportation>HLAreliable</transportation>
                 <order>TimeStamp</order>
                 <semantics></semantics>
                 <parameter>
-                    <name>idKasy</name>
+                    <name>cashRegisterId</name>
+                    <dataType>HLAunicodeString</dataType>
+                </parameter>
+            </interactionClass>
+
+            <interactionClass>
+                <name>OpenCashRegister</name>
+                <sharing>PublishSubscribe</sharing>
+                <dimensions/>
+                <transportation>HLAreliable</transportation>
+                <order>TimeStamp</order>
+                <semantics></semantics>
+                <parameter>
+                    <name>cashRegisterId</name>
                     <dataType>HLAunicodeString</dataType>
                 </parameter>
                 <parameter>
-                    <name>uprzywilejowana</name>
+                    <name>privileged</name>
                     <dataType>HLAboolean</dataType>
                 </parameter>
                 <parameter>
-                    <name>czasObslugi</name>
+                    <name>serviceTime</name>
                     <dataType>HLAinteger32BE</dataType>
                 </parameter>
             </interactionClass>
 
             <interactionClass>
-                <name>KoniecZakupow</name>
+                <name>ShoppingFinished</name>
                 <sharing>PublishSubscribe</sharing>
                 <dimensions/>
                 <transportation>HLAreliable</transportation>
                 <order>TimeStamp</order>
                 <semantics></semantics>
                 <parameter>
-                    <name>idKlient</name>
+                    <name>clientId</name>
                     <dataType>HLAunicodeString</dataType>
                 </parameter>
                 <parameter>
-                    <name>idKasy</name>
+                    <name>cashRegisterId</name>
                     <dataType>HLAunicodeString</dataType>
                 </parameter>
             </interactionClass>
 
             <interactionClass>
-                <name>KlientDoKolejki</name>
+                <name>ClientToCashQueue</name>
                 <sharing>PublishSubscribe</sharing>
                 <dimensions/>
                 <transportation>HLAreliable</transportation>
                 <order>TimeStamp</order>
                 <semantics></semantics>
                 <parameter>
-                    <name>idKlient</name>
+                    <name>clientId</name>
                     <dataType>HLAunicodeString</dataType>
                 </parameter>
                 <parameter>
-                    <name>iloscProduktow</name>
+                    <name>totalProductsCount</name>
                     <dataType>HLAinteger32BE</dataType>
                 </parameter>
             </interactionClass>
 
             <interactionClass>
-                <name>OtworzKolejke</name>
+                <name>OpenCashQueue</name>
                 <sharing>PublishSubscribe</sharing>
                 <dimensions/>
                 <transportation>HLAreliable</transportation>
                 <order>TimeStamp</order>
                 <semantics></semantics>
                 <parameter>
-                    <name>idKolejki</name>
+                    <name>cashQueueId</name>
                     <dataType>HLAunicodeString</dataType>
                 </parameter>
             </interactionClass>
 
             <interactionClass>
-                <name>ZamknijKolejke</name>
+                <name>CloseCashQueue</name>
                 <sharing>PublishSubscribe</sharing>
                 <dimensions/>
                 <transportation>HLAreliable</transportation>
                 <order>TimeStamp</order>
                 <semantics></semantics>
                 <parameter>
-                    <name>idKolejki</name>
+                    <name>cashQueueId</name>
                     <dataType>HLAunicodeString</dataType>
                 </parameter>
             </interactionClass>
 
             <interactionClass>
-                <name>KlientDoKasy</name>
+                <name>ClientToCashRegister</name>
                 <sharing>PublishSubscribe</sharing>
                 <dimensions/>
                 <transportation>HLAreliable</transportation>
                 <order>TimeStamp</order>
                 <semantics></semantics>
                 <parameter>
-                    <name>idKlient</name>
+                    <name>clientId</name>
                     <dataType>HLAunicodeString</dataType>
                 </parameter>
                 <parameter>
-                    <name>idKasy</name>
+                    <name>cashRegisterId</name>
                     <dataType>HLAunicodeString</dataType>
                 </parameter>
                 <parameter>
-                    <name>iloscProduktow</name>
+                    <name>totalProductsCount</name>
                     <dataType>HLAinteger32BE</dataType>
                 </parameter>
             </interactionClass>

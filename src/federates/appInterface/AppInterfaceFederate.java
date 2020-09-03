@@ -1,20 +1,16 @@
-package federates.interfejs;
+package federates.appInterface;
 
-import entity.Interfejs;
 import events.ExternalEvent;
 import gui.GUIController;
 import gui.GUIHandler;
 import gui.GUI;
 import hla.rti1516e.*;
-import hla.rti1516e.encoding.HLAunicodeString;
 import hla.rti1516e.exceptions.FederatesCurrentlyJoined;
 import hla.rti1516e.exceptions.FederationExecutionAlreadyExists;
 import hla.rti1516e.exceptions.FederationExecutionDoesNotExist;
 import hla.rti1516e.exceptions.RTIexception;
 import utils.*;
 
-import javax.lang.model.type.ArrayType;
-import javax.swing.*;
 import java.awt.*;
 import java.io.BufferedReader;
 import java.io.File;
@@ -23,50 +19,50 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Random;
 
-public class InterfejsFederate {
-    private static final Logger logger = new Logger("InterfejsFederate");
+public class AppInterfaceFederate {
+    private static final Logger logger = new Logger("AppInterfaceFederate");
 
     public static final String READY_TO_RUN = "ReadyToRun";
 
     private RTIambassador rtiamb;
-    private InterfejsFederateAmbassador fedamb;
+    private AppInterfaceFederateAmbassador fedamb;
     protected EncoderDecoder encoder;
 
     // SUBSCRIBED interactions
-    protected InteractionClassHandle statystykiSklepuInteractionHandle;
-    protected ParameterHandle wszyscyKlienciSklepHandle;
-    protected ParameterHandle klienciNaZakupachSklepHandle;
-    protected ParameterHandle klienciWKolejkachSklepHandle;
-    protected ParameterHandle sumaKlientowPoZakupachHandle;
+    protected InteractionClassHandle shopStatsInteractionHandle;
+    protected ParameterHandle allClientsInShopHandle;
+    protected ParameterHandle clientsShoppingHandle;
+    protected ParameterHandle clientsInCashQueuesHandle;
+    protected ParameterHandle clientsAfterShoppingCountHandle;
 
-    protected InteractionClassHandle statystykiKolejkiInteractionHandle;
-    protected ParameterHandle kolejkiIKlienciKolejkiHandle;
-    protected ParameterHandle iloscKolejekKolejkiHandle;
-    protected ParameterHandle iloscUprzywilejowanychKolejkiHandle;
+    protected InteractionClassHandle cashQueueStatsInteractionHandle;
+    protected ParameterHandle clientsCashQueueStatsHandle;
+    protected ParameterHandle queuesCountCashQueueStatsHandle;
+    protected ParameterHandle privilegedCashQueueStatsHandle;
 
-    protected InteractionClassHandle statystykiKasaInteractionHandle;
-    protected ParameterHandle zakupionychTowarowKasaHandle;
-    protected ParameterHandle zwrotyTowarowKasaHandle;
-    protected ParameterHandle skorzystaloZUprzywilejowanej;
+    protected InteractionClassHandle cashRegisterStatsInteractionHandle;
+    protected ParameterHandle boughtProductsCashRegisterHandle;
+    protected ParameterHandle returnedProductsCashRegisterHandle;
+    protected ParameterHandle usedPrivilegedCashRegisterHandle;
     //////////////////////////////////////////////////
 
     protected InteractionClassHandle stopSimulationInteractionHandle;
 
     private GUIHandler guihandler;
 
-    private boolean sklepIsOpen = true;
+    private boolean isShopOpen = true;
 
-    private int wszyscyWSklepie = 0;
-    private int sumaWKolejkach = 0;
-    private int sumaNaZakupach = 0;
-    private int sumaWszystkichObsluzonych = 0;
-    private String klienciWKolejkach = "";
-    private int sumaKolejek = 0;
-    private int kolejekUprzywilejowanych = 0;
-    private int zakupionychTowarow = 0;
-    private int zwroconychTowarow = 0;
-    private int skorzystaloZKasyUprzywilejowanej = 0;
-    private int maxDlugoscKas=0;
+    private int totalClientsInShop = 0;
+    private int clientsInCashQueuesSum = 0;
+    private int clientsInShoppingSum = 0;
+    private int clientsServicedSum = 0;
+    private String clientsInQueues = "";
+    private int queuesCount = 0;
+    private int queuesPrivilegedCount = 0;
+    private int boughtProducts = 0;
+    private int returnedProducts = 0;
+    private int usedPrivilegedSum = 0;
+    private int maxCashQueueLength =0;
 
     private void waitForUser()
     {
@@ -92,7 +88,7 @@ public class InterfejsFederate {
 
         // connect
         logger.info( "Connecting..." );
-        fedamb = new InterfejsFederateAmbassador( this );
+        fedamb = new AppInterfaceFederateAmbassador( this );
         rtiamb.connect( fedamb, CallbackModel.HLA_EVOKED );
 
         // create federation
@@ -124,7 +120,7 @@ public class InterfejsFederate {
         };
 
         rtiamb.joinFederationExecution( federateName,
-                "InterfejsFederate",
+                "AppInterfaceFederate",
                 "SupermarketFederation",
                 joinModules );
 
@@ -221,7 +217,7 @@ public class InterfejsFederate {
     ///////////////////////////////////////////////////////////////////
 
     public void run() throws RTIexception {
-        while(sklepIsOpen) {
+        while(isShopOpen) {
             advanceTime(randomTime());
             if (Constants.LOG_TIME_ADVANCE) logger.info(String.format("Time Advanced to %.1f", fedamb.federateTime));
 
@@ -229,120 +225,120 @@ public class InterfejsFederate {
                 fedamb.getExternalEvents().sort(new ExternalEvent.ExternalEventComparator());
                 for (ExternalEvent externalEvent : fedamb.getExternalEvents()) {
                     switch (externalEvent.getEventType()) {
-                        case STATYSTYKI_SKLEP:
+                        case SHOP_STATS:
                             Object[] dataSklep = (Object[]) externalEvent.getData();
-                            updateSklepStats(dataSklep);
+                            updateShopStats(dataSklep);
                             break;
-                        case STATYSTYKI_KASA:
+                        case CASH_REGISTER_STATS:
                             Object[] dataKasa = (Object[]) externalEvent.getData();
-                            updateKasaStats(dataKasa);
+                            updateCashRegisterStats(dataKasa);
                             break;
-                        case STATYSTYKI_KOLEJKA:
+                        case CASH_QUEUE_STATS:
                             Object[] dataKolejka = (Object[]) externalEvent.getData();
-                            updateKolejkaStats(dataKolejka);
+                            updateCashQueueStats(dataKolejka);
                             break;
                     }
                 }
                 fedamb.getExternalEvents().clear();
             }
 
-            logger.info(String.format("STATYSTYKI SKLEPU: \n" +
-                    "Wszyscy klienci w sklepie: %s \n" +
-                    "Klienci robiący zakupy: %s \n" +
-                    "Klienci w kolejkach: %s \n" +
-                    "Wszyscy obsłużeni klienci: %s \n" +
-                    "Wizualizacja kolejek: %s \n" +
-                    "Suma kolejek: %s \n" +
-                    "Kolejek do kas uprzywilejowanych: %s \n" +
-                    "Zakupionych towarów: %s \n" +
-                    "Zwróconych towarów: %s \n" +
-                    "Suma klientów którzy skorzystali z kasy uprzywilejowanej: %s",
-                    wszyscyWSklepie,
-                    sumaNaZakupach,
-                    sumaWKolejkach,
-                    sumaWszystkichObsluzonych,
-                    klienciWKolejkach,
-                    sumaKolejek,
-                    kolejekUprzywilejowanych,
-                    zakupionychTowarow,
-                    zwroconychTowarow,
-                    skorzystaloZKasyUprzywilejowanej));
+            logger.info(String.format("SHOP STATS: \n" +
+                    "All clients in shop: %s \n" +
+                    "All clients during shopping: %s \n" +
+                    "All clients in cash queues: %s \n" +
+                    "Clients serviced: %s \n" +
+                    "CashQueues visualisation: %s \n" +
+                    "Total CashQueues Count: %s \n" +
+                    "PrivilegedQueuesOpen: %s \n" +
+                    "Products bought: %s \n" +
+                    "Products returned: %s \n" +
+                    "Clients used privileged cash queue count: %s",
+                    totalClientsInShop,
+                    clientsInShoppingSum,
+                    clientsInCashQueuesSum,
+                    clientsServicedSum,
+                    clientsInQueues,
+                    queuesCount,
+                    queuesPrivilegedCount,
+                    boughtProducts,
+                    returnedProducts,
+                    usedPrivilegedSum));
         }
 
         stopSimulation();
     }
 
-    private void updateSklepStats(Object [] data) {
-        int wszyscyKlienci = (int) data[0];
-        int naZakupach = (int) data[1];
-        int wKolejkach = (int) data[2];
-        int poZakupach = (int) data[3];
+    private void updateShopStats(Object [] data) {
+        int allClientsCount = (int) data[0];
+        int allClientsInShoppingCount = (int) data[1];
+        int allClientsInCashQueuesCount = (int) data[2];
+        int allClientsServicedCount = (int) data[3];
 
-        wszyscyWSklepie = wszyscyKlienci;
-        sumaNaZakupach = naZakupach;
-        sumaWKolejkach = wKolejkach;
-        sumaWszystkichObsluzonych = poZakupach;
+        totalClientsInShop = allClientsCount;
+        clientsInShoppingSum = allClientsInShoppingCount;
+        clientsInCashQueuesSum = allClientsInCashQueuesCount;
+        clientsServicedSum = allClientsServicedCount;
 
-        guihandler.addWszyscyWSklepie(wszyscyWSklepie);
-        guihandler.addWszyscyNaZakupach(sumaNaZakupach);
-        guihandler.addWszyscyWKolejce(sumaWKolejkach);
-        guihandler.addWszyscyObsluzeni(sumaWszystkichObsluzonych);
+        guihandler.addTotalClientsInShop(totalClientsInShop);
+        guihandler.addTotalClientsInShopping(clientsInShoppingSum);
+        guihandler.addTotalClientsInCashQueues(clientsInCashQueuesSum);
+        guihandler.addTotalClientsServiced(clientsServicedSum);
     }
 
-    private void updateKolejkaStats(Object [] data) {
-        String wszyscyWKolejkach = (String) data[0];
-        int sumaKolejek = (int) data[1];
-        int sumaKolejekUprzywilejowanych = (int) data[2];
+    private void updateCashQueueStats(Object [] data) {
+        String allClientsInCashQueuesCount = (String) data[0];
+        int totalQueuesSum = (int) data[1];
+        int privilegedCashQueuesSum = (int) data[2];
 
-        klienciWKolejkach = wszyscyWKolejkach;
-        this.sumaKolejek = sumaKolejek;
-        kolejekUprzywilejowanych = sumaKolejekUprzywilejowanych;
+        clientsInQueues = allClientsInCashQueuesCount;
+        this.queuesCount = totalQueuesSum;
+        queuesPrivilegedCount = privilegedCashQueuesSum;
 
-        if(maxDlugoscKas<sumaKolejek){
-            maxDlugoscKas=sumaKolejek;
-            guihandler.addMaxDlugoscKolejek(maxDlugoscKas);
+        if(maxCashQueueLength <totalQueuesSum){
+            maxCashQueueLength =totalQueuesSum;
+            guihandler.addMaxQueuesCount(maxCashQueueLength);
         }
 
-        guihandler.addLiczbeKolejek(sumaKolejek);
-        guihandler.obrazowanieKolejek(wszyscyWKolejkach);
-        guihandler.addKlienciUprzywilejowani(kolejekUprzywilejowanych);
+        guihandler.addCashQueuesCount(totalQueuesSum);
+        guihandler.cashQueuesVisualisation(allClientsInCashQueuesCount);
+        guihandler.addClientsPrivileged(queuesPrivilegedCount);
     }
 
-    private void updateKasaStats(Object [] data) {
-        int zakupionychTowarow = (int) data[0];
-        int zwroconychTowarow = (int) data[1];
-        int skorzystaloZUprzywilejowanej = (int) data[2];
+    private void updateCashRegisterStats(Object [] data) {
+        int productsBought = (int) data[0];
+        int productsReturned = (int) data[1];
+        int usedPrivilegedCashRegisterCount = (int) data[2];
 
-        this.zakupionychTowarow = zakupionychTowarow;
-        this.zwroconychTowarow = zwroconychTowarow;
-        skorzystaloZKasyUprzywilejowanej = skorzystaloZUprzywilejowanej;
+        this.boughtProducts = productsBought;
+        this.returnedProducts = productsReturned;
+        usedPrivilegedSum = usedPrivilegedCashRegisterCount;
 
-        guihandler.addZakupionychTowarow(zakupionychTowarow);
-        guihandler.addZwroconeTowary(zwroconychTowarow);
-        guihandler.addKlienciUprzywilejowani(skorzystaloZKasyUprzywilejowanej);
+        guihandler.addTotalProductsBought(productsBought);
+        guihandler.addTotalProductsReturned(productsReturned);
+        guihandler.addClientsPrivileged(usedPrivilegedSum);
     }
 
     private void publishAndSubscribe() throws RTIexception
     {
-        statystykiSklepuInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.StatystykiSklep");
-        wszyscyKlienciSklepHandle = rtiamb.getParameterHandle(statystykiSklepuInteractionHandle, "wszyscyKlienci");
-        klienciNaZakupachSklepHandle = rtiamb.getParameterHandle(statystykiSklepuInteractionHandle, "naZakupach");
-        klienciWKolejkachSklepHandle = rtiamb.getParameterHandle(statystykiSklepuInteractionHandle, "klienciWKolejkach");
-        sumaKlientowPoZakupachHandle = rtiamb.getParameterHandle(statystykiSklepuInteractionHandle, "sumaKlientowPoZakupach");
+        shopStatsInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.ShopStats");
+        allClientsInShopHandle = rtiamb.getParameterHandle(shopStatsInteractionHandle, "totalClientsInShop");
+        clientsShoppingHandle = rtiamb.getParameterHandle(shopStatsInteractionHandle, "totalClientsInShopping");
+        clientsInCashQueuesHandle = rtiamb.getParameterHandle(shopStatsInteractionHandle, "totalClientsInCashQueues");
+        clientsAfterShoppingCountHandle = rtiamb.getParameterHandle(shopStatsInteractionHandle, "totalClientsServiced");
 
-        statystykiKolejkiInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.StatystykiKolejka");
-        kolejkiIKlienciKolejkiHandle = rtiamb.getParameterHandle(statystykiKolejkiInteractionHandle, "kolejkiIKlienci");
-        iloscKolejekKolejkiHandle = rtiamb.getParameterHandle(statystykiKolejkiInteractionHandle, "iloscKolejek");
-        iloscUprzywilejowanychKolejkiHandle = rtiamb.getParameterHandle(statystykiKolejkiInteractionHandle, "iloscKolejekUprzywilejowanych");
+        cashQueueStatsInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.CashQueueStats");
+        clientsCashQueueStatsHandle = rtiamb.getParameterHandle(cashQueueStatsInteractionHandle, "clientsInCashQueues");
+        queuesCountCashQueueStatsHandle = rtiamb.getParameterHandle(cashQueueStatsInteractionHandle, "totalCashQueuesCount");
+        privilegedCashQueueStatsHandle = rtiamb.getParameterHandle(cashQueueStatsInteractionHandle, "totalCashQueuesPrivilegedCount");
 
-        statystykiKasaInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.StatystykiKasa");
-        zakupionychTowarowKasaHandle = rtiamb.getParameterHandle(statystykiKasaInteractionHandle, "iloscZakupionychTowarow");
-        zwrotyTowarowKasaHandle = rtiamb.getParameterHandle(statystykiKasaInteractionHandle, "iloscZwrotow");
-        skorzystaloZUprzywilejowanej = rtiamb.getParameterHandle(statystykiKasaInteractionHandle, "ileSkorzystaloZUprzywilejowanej");
+        cashRegisterStatsInteractionHandle = rtiamb.getInteractionClassHandle("HLAinteractionRoot.CashRegisterStats");
+        boughtProductsCashRegisterHandle = rtiamb.getParameterHandle(cashRegisterStatsInteractionHandle, "totalProductsBought");
+        returnedProductsCashRegisterHandle = rtiamb.getParameterHandle(cashRegisterStatsInteractionHandle, "totalProductsReturned");
+        usedPrivilegedCashRegisterHandle = rtiamb.getParameterHandle(cashRegisterStatsInteractionHandle, "clientsUsedPrivilegedCashRegister");
 
-        rtiamb.subscribeInteractionClass(statystykiKolejkiInteractionHandle);
-        rtiamb.subscribeInteractionClass(statystykiKasaInteractionHandle);
-        rtiamb.subscribeInteractionClass(statystykiSklepuInteractionHandle);
+        rtiamb.subscribeInteractionClass(cashQueueStatsInteractionHandle);
+        rtiamb.subscribeInteractionClass(cashRegisterStatsInteractionHandle);
+        rtiamb.subscribeInteractionClass(shopStatsInteractionHandle);
     }
 
     private void stopSimulation() throws RTIexception {
@@ -368,15 +364,15 @@ public class InterfejsFederate {
     //----------------------------------------------------------
     public static void main(String[] args)
     {
-        String federateName = "InterfejsFederate";
+        String federateName = "AppInterfaceFederate";
         if( args.length != 0 ) {
             federateName = args[0];
         }
 
         try {
-            InterfejsFederate interfejsFederate = new InterfejsFederate();
-            EventQueue.invokeLater(() -> GUI.start(interfejsFederate));
-            interfejsFederate.runFederate(federateName);
+            AppInterfaceFederate appInterfaceFederate = new AppInterfaceFederate();
+            EventQueue.invokeLater(() -> GUI.start(appInterfaceFederate));
+            appInterfaceFederate.runFederate(federateName);
         }
         catch( Exception rtie ) {
             rtie.printStackTrace();

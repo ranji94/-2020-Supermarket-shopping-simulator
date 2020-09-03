@@ -1,17 +1,17 @@
 package utils;
 
 public class Constants {
-    ///////// PARAMETRY SYMULACJI ///////////////////////////
+    ///////// Simulation parameters ///////////////////////////
     public static double TIME_STEP = 1.0;
-    public static int WSPOLCZYNNIK_NAPLYWU_KLIENTOW = 5; // IM MNIEJ TYM SZYBCIEJ
-    public static int MAX_KLIENTOW_W_SKLEPIE = 200;
-    public static int MAX_SREDNI_CZAS_OBSLUGI = 3; // MINIMALNA WARTOSC: 1
-    public static int PROCENT_KLIENTOW_KUPUJACYCH_5_PRODUKTOW = 25;
-    public static float PRAWDOPODOBIENSTWO_ZAKONCZENIA_ZAKUPOW = 0.2f;
-    public static int MAX_DLUGOSC_KOLEJKI = 10;
-    public static int MAX_PRODUKTOW_KLIENTA = 40;
-    public static float PRAWDOPODOBIENSTWO_OTWARCIA_KASY_UPRZYWILEJOWANEJ = 0.1f;
-    public static float PRAWDOPODOBIENSTWO_ZWROTU_TOWARU = 0.1f;
+    public static int CLIENTS_INFLOW_RATIO = 5;
+    public static int MAX_CLIENTS_IN_SHOP = 200;
+    public static int MAX_AVERAGE_SERVICE_TIME = 3;
+    public static int CLIENTS_PRIVILEGED_PERCENTAGE = 25;
+    public static float FINISH_SHOPPING_PROBABILITY = 0.2f;
+    public static int MAX_CASH_QUEUE_LENGTH = 10;
+    public static int MAX_TOTAL_PRODUCTS_COUNT = 40;
+    public static float OPEN_PRIVILEGED_CASH_REGISTER_PROBABILITY = 0.1f;
+    public static float PRODUCT_RETURN_PROBABILITY = 0.1f;
 
     public static boolean LOG_TIME_ADVANCE = true;
     public static boolean LOG_TIME_REQUEST = false;

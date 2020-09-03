@@ -1,6 +1,6 @@
 package gui;
 
-import federates.interfejs.InterfejsFederate;
+import federates.appInterface.AppInterfaceFederate;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -10,10 +10,10 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 public class GUI extends Application {
-    private static InterfejsFederate fed;
+    private static AppInterfaceFederate fed;
 
-    public static void start(InterfejsFederate federat){
-        GUI.fed=federat;
+    public static void start(AppInterfaceFederate federate){
+        GUI.fed=federate;
         launch();
     }
 
@@ -25,7 +25,7 @@ public class GUI extends Application {
         fed.setGuiHandler(controller);
 
         Scene scene = new Scene(root,1024,600);
-        primaryStage.setTitle("Symulacja sklepu");
+        primaryStage.setTitle("Shop simulation");
         primaryStage.setScene(scene);
         primaryStage.show();
     }

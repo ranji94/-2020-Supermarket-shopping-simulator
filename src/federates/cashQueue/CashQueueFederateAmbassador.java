@@ -1,4 +1,4 @@
-package federates.kolejka;
+package federates.cashQueue;
 
 import events.ExternalEvent;
 import hla.rti1516e.*;
@@ -11,10 +11,10 @@ import utils.TimeUtils;
 
 import java.util.ArrayList;
 
-public class KolejkaFederateAmbassador extends NullFederateAmbassador {
-    private static final Logger logger = new Logger("KolejkaFederateAmbassador");
+public class CashQueueFederateAmbassador extends NullFederateAmbassador {
+    private static final Logger logger = new Logger("CashQueueFederateAmbassador");
     private EncoderDecoder encoder;
-    private KolejkaFederate federate;
+    private CashQueueFederate federate;
 
     protected double federateTime        = 0.0;
     protected double federateLookahead   = 1.0;
@@ -28,7 +28,7 @@ public class KolejkaFederateAmbassador extends NullFederateAmbassador {
 
     private ArrayList<ExternalEvent> externalEvents = new ArrayList<>();
 
-    public KolejkaFederateAmbassador(KolejkaFederate federate) throws RTIexception {
+    public CashQueueFederateAmbassador(CashQueueFederate federate) throws RTIexception {
         this.federate = federate;
         this.encoder = new EncoderDecoder();
     }
@@ -46,14 +46,14 @@ public class KolejkaFederateAmbassador extends NullFederateAmbassador {
     @Override
     public void announceSynchronizationPoint(String label, byte[] tag) throws FederateInternalError {
         logger.info( "Synchronization point announced: " + label );
-        if( label.equals(KolejkaFederate.READY_TO_RUN) )
+        if( label.equals(CashQueueFederate.READY_TO_RUN) )
             this.isAnnounced = true;
     }
 
     @Override
     public void federationSynchronized(String label, FederateHandleSet failedToSyncSet) throws FederateInternalError {
         logger.info( "Federation Synchronized: " + label );
-        if( label.equals(KolejkaFederate.READY_TO_RUN) )
+        if( label.equals(CashQueueFederate.READY_TO_RUN) )
             this.isReadyToRun = true;
     }
 
@@ -87,44 +87,44 @@ public class KolejkaFederateAmbassador extends NullFederateAmbassador {
                                     SupplementalReceiveInfo receiveInfo )
             throws FederateInternalError
     {
-        if (interactionClass.equals(federate.otworzKolejkeInteractionHandle)) {
+        if (interactionClass.equals(federate.openCashQueueInteractionHandle)) {
             double receiveTime = TimeUtils.convertTime(time);
-            logger.info(String.format("Receive interaction OtworzKolejke [TIME:%.1f]", receiveTime));
+            logger.info(String.format("Receive interaction OpenCashQueue [TIME:%.1f]", receiveTime));
 
-            String idKolejki = encoder.toString(theParameters.get(federate.idKolejkiOtworzSubscribedHandle));
+            String clientId = encoder.toString(theParameters.get(federate.cashQueueIdOpenCashQueueHandle));
 
-            externalEvents.add(new ExternalEvent(idKolejki, ExternalEvent.EventType.OTWORZ_KOLEJKE, receiveTime));
+            externalEvents.add(new ExternalEvent(clientId, ExternalEvent.EventType.OPEN_CASH_QUEUE, receiveTime));
         }
 
-        if (interactionClass.equals(federate.zamknijKolejkeInteractionHandle)) {
+        if (interactionClass.equals(federate.closeCashQueueInteractionHandle)) {
             double receiveTime = TimeUtils.convertTime(time);
-            logger.info(String.format("Receive interaction ZamknijKolejke [TIME:%.1f]", receiveTime));
+            logger.info(String.format("Receive interaction CloseCashQueue [TIME:%.1f]", receiveTime));
 
-            String idKolejki = encoder.toString(theParameters.get(federate.idKolejkiZamknijHandle));
+            String cashQueueId = encoder.toString(theParameters.get(federate.cashQueueIdCloseCashQueueHandle));
 
-            externalEvents.add(new ExternalEvent(idKolejki, ExternalEvent.EventType.ZAMKNIJ_KOLEJKE, receiveTime));
+            externalEvents.add(new ExternalEvent(cashQueueId, ExternalEvent.EventType.CLOSE_CASH_QUEUE, receiveTime));
         }
 
-        if (interactionClass.equals(federate.klientDoKolejkiInteractionHandle)) {
+        if (interactionClass.equals(federate.clientToCashQueueInteractionHandle)) {
             double receiveTime = TimeUtils.convertTime(time);
-            logger.info(String.format("Receive interaction KlientDoKolejki [TIME:%.1f]", receiveTime));
+            logger.info(String.format("Receive interaction ClientToCashQueue [TIME:%.1f]", receiveTime));
 
-            String idKlient = encoder.toString(theParameters.get(federate.idKlientaKolejkiHandle));
-            int iloscProduktow = encoder.toInteger32(theParameters.get(federate.iloscProduktowHandle));
-            Object [] data = { idKlient, iloscProduktow };
+            String clientId = encoder.toString(theParameters.get(federate.clientIdClientToCashQueueHandle));
+            int productsCount = encoder.toInteger32(theParameters.get(federate.productsCountClientToCashQueueHandle));
+            Object [] data = { clientId, productsCount };
 
-            externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.KLIENT_DO_KOLEJKI, receiveTime));
+            externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.CLIENT_TO_QUEUE, receiveTime));
         }
 
-        if (interactionClass.equals(federate.koniecZakupowInteractionHandle)) {
+        if (interactionClass.equals(federate.shoppingFinishedInteractionHandle)) {
             double receiveTime = TimeUtils.convertTime(time);
-            logger.info(String.format("Receive interaction KoniecZakupow [TIME:%.1f]", receiveTime));
-            String idKlient = encoder.toString(theParameters.get(federate.idKlientaKoniecHandle));
-            String idKasy = encoder.toString(theParameters.get(federate.idKasyKoniecHandle));
+            logger.info(String.format("Receive interaction ShoppingFinished [TIME:%.1f]", receiveTime));
+            String clientId = encoder.toString(theParameters.get(federate.clientIdShoppingFinishedHandle));
+            String cashRegisterCount = encoder.toString(theParameters.get(federate.cashRegisterIdShoppingFinishedHandle));
 
-            Object [] data = { idKlient, idKasy };
+            Object [] data = { clientId, cashRegisterCount };
 
-            externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.KONIEC_ZAKUPOW, receiveTime));
+            externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.SHOPPING_FINISHED, receiveTime));
         }
     }
 

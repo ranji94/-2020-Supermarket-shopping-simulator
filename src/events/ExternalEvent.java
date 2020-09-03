@@ -5,18 +5,18 @@ import java.util.Comparator;
 public class ExternalEvent<T> {
 
     public enum EventType {
-        KLIENT_WCHODZI,
-        ZAMKNIJ_KASE,
-        OTWORZ_KASE,
-        KONIEC_ZAKUPOW,
-        KLIENT_DO_KOLEJKI,
-        OTWORZ_KOLEJKE,
-        ZAMKNIJ_KOLEJKE,
-        KLIENT_DO_KASY,
+        CLIENT_ENTERED_SHOP,
+        CLOSE_CASH_REGISTER,
+        OPEN_CASH_REGISTER,
+        SHOPPING_FINISHED,
+        CLIENT_TO_QUEUE,
+        OPEN_CASH_QUEUE,
+        CLOSE_CASH_QUEUE,
+        CLIENT_TO_CASH_REGISTER,
         STOP_SIMULATION,
-        STATYSTYKI_SKLEP,
-        STATYSTYKI_KOLEJKA,
-        STATYSTYKI_KASA
+        SHOP_STATS,
+        CASH_QUEUE_STATS,
+        CASH_REGISTER_STATS
     }
 
     private T data;

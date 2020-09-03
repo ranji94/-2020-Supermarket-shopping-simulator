@@ -1,4 +1,4 @@
-package federates.kasa;
+package federates.appInterface;
 
 import events.ExternalEvent;
 import hla.rti1516e.*;
@@ -11,10 +11,10 @@ import utils.TimeUtils;
 
 import java.util.ArrayList;
 
-public class KasaFederateAmbassador extends NullFederateAmbassador {
-    private static final Logger logger = new Logger("KasaFederateAmbassador");
+public class AppInterfaceFederateAmbassador extends NullFederateAmbassador {
+    private static final Logger logger = new Logger("AppInterfaceFederateAmbassador");
     private EncoderDecoder encoder;
-    private KasaFederate federate;
+    private AppInterfaceFederate federate;
 
     protected double federateTime        = 0.0;
     protected double federateLookahead   = 1.0;
@@ -28,7 +28,7 @@ public class KasaFederateAmbassador extends NullFederateAmbassador {
 
     private ArrayList<ExternalEvent> externalEvents = new ArrayList<>();
 
-    public KasaFederateAmbassador(KasaFederate federate) throws RTIexception {
+    public AppInterfaceFederateAmbassador(AppInterfaceFederate federate) throws RTIexception {
         this.federate = federate;
         this.encoder = new EncoderDecoder();
     }
@@ -46,14 +46,14 @@ public class KasaFederateAmbassador extends NullFederateAmbassador {
     @Override
     public void announceSynchronizationPoint(String label, byte[] tag) throws FederateInternalError {
         logger.info( "Synchronization point announced: " + label );
-        if( label.equals(KasaFederate.READY_TO_RUN) )
+        if( label.equals(AppInterfaceFederate.READY_TO_RUN) )
             this.isAnnounced = true;
     }
 
     @Override
     public void federationSynchronized(String label, FederateHandleSet failedToSyncSet) throws FederateInternalError {
         logger.info( "Federation Synchronized: " + label );
-        if( label.equals(KasaFederate.READY_TO_RUN) )
+        if( label.equals(AppInterfaceFederate.READY_TO_RUN) )
             this.isReadyToRun = true;
     }
 
@@ -87,36 +87,48 @@ public class KasaFederateAmbassador extends NullFederateAmbassador {
                                     SupplementalReceiveInfo receiveInfo )
             throws FederateInternalError
     {
-        if (interactionClass.equals(federate.otworzKaseInteractionHandle)) {
+        if (interactionClass.equals(federate.stopSimulationInteractionHandle)) {
             double receiveTime = TimeUtils.convertTime(time);
-            logger.info(String.format("Receive interaction OtworzKase [TIME:%.1f]", receiveTime));
+            logger.info(String.format("Receive interaction StopSimulation [TIME:%.1f]", receiveTime));
 
-            String idKasy = encoder.toString(theParameters.get(federate.idKasyHandle));
-            boolean uprzywilejowana = encoder.toBoolean(theParameters.get(federate.uprzywilejowanaHandle));
-            int czasObslugi = encoder.toInteger32(theParameters.get(federate.czasObslugiHandle));
-            Object [] data = { idKasy, uprzywilejowana, czasObslugi };
-
-            externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.OTWORZ_KASE, receiveTime));
+            externalEvents.add(new ExternalEvent(null, ExternalEvent.EventType.STOP_SIMULATION, receiveTime));
         }
 
-        if (interactionClass.equals(federate.zamknijKaseInteractionHandle)) {
+        if (interactionClass.equals(federate.shopStatsInteractionHandle)) {
             double receiveTime = TimeUtils.convertTime(time);
-            logger.info(String.format("Receive interaction ZamknijKase [TIME:%.1f]", receiveTime));
-            String idKasy = encoder.toString(theParameters.get(federate.idKasyZamknijHandle));
+            logger.info(String.format("Receive interaction ShopStats [TIME:%.1f]", receiveTime));
+            int totalClientsCount = encoder.toInteger32(theParameters.get(federate.allClientsInShopHandle));
+            int totalClientsInShopping = encoder.toInteger32(theParameters.get(federate.clientsShoppingHandle));
+            int totalClientsInCashQueues = encoder.toInteger32(theParameters.get(federate.clientsInCashQueuesHandle));
+            int totalClientsServiced = encoder.toInteger32(theParameters.get(federate.clientsAfterShoppingCountHandle));
 
-            externalEvents.add(new ExternalEvent(idKasy, ExternalEvent.EventType.ZAMKNIJ_KASE, receiveTime));
+            Object [] data = { totalClientsCount, totalClientsInShopping, totalClientsInCashQueues, totalClientsServiced };
+
+            externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.SHOP_STATS, receiveTime));
         }
 
-        if (interactionClass.equals(federate.klientDoKasyInteractionHandle)) {
+        if (interactionClass.equals(federate.cashQueueStatsInteractionHandle)) {
             double receiveTime = TimeUtils.convertTime(time);
-            logger.info(String.format("Receive interaction KlientDoKasy [TIME:%.1f]", receiveTime));
+            logger.info(String.format("Receive interaction CashQueueStats [TIME:%.1f]", receiveTime));
+            String cashQueuesVisualisation = encoder.toString(theParameters.get(federate.clientsCashQueueStatsHandle));
+            int totalCashQueuesCount = encoder.toInteger32(theParameters.get(federate.queuesCountCashQueueStatsHandle));
+            int privilegedCashQueuesCount = encoder.toInteger32(theParameters.get(federate.privilegedCashQueueStatsHandle));
 
-            String idKasy = encoder.toString(theParameters.get(federate.idKasyDoKasyHandle));
-            String idKlient = encoder.toString(theParameters.get(federate.idKlientaDoKasyHandle));
-            int iloscProduktow = encoder.toInteger32(theParameters.get(federate.iloscProduktowDoKasyHandle));
-            Object [] data = { idKasy, idKlient, iloscProduktow };
+            Object [] data = { cashQueuesVisualisation, totalCashQueuesCount, privilegedCashQueuesCount };
 
-            externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.KLIENT_DO_KASY, receiveTime));
+            externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.CASH_QUEUE_STATS, receiveTime));
+        }
+
+        if (interactionClass.equals(federate.cashRegisterStatsInteractionHandle)) {
+            double receiveTime = TimeUtils.convertTime(time);
+            logger.info(String.format("Receive interaction CashRegisterStats [TIME:%.1f]", receiveTime));
+            int productsBought = encoder.toInteger32(theParameters.get(federate.boughtProductsCashRegisterHandle));
+            int productsReturned = encoder.toInteger32(theParameters.get(federate.returnedProductsCashRegisterHandle));
+            int clientsUsedPrivilegedCashRegisterCount = encoder.toInteger32(theParameters.get(federate.usedPrivilegedCashRegisterHandle));
+
+            Object [] data = { productsBought, productsReturned, clientsUsedPrivilegedCashRegisterCount };
+
+            externalEvents.add(new ExternalEvent(data, ExternalEvent.EventType.CASH_REGISTER_STATS, receiveTime));
         }
     }
 

@@ -7,90 +7,99 @@ import javafx.scene.control.Label;
 public class GUIController implements GUIHandler {
 
     @FXML
-    private Label wszyscywsklepie;
+    private Label totalClientsInShop;
 
     @FXML
-    private Label wszyscyNaZakupach;
+    private Label totalClientsInShopping;
 
     @FXML
-    private Label wszyscyWKolejkach;
+    private Label totalClientsInCashQueues;
 
     @FXML
-    private Label wszyscyObsluzeniKlienci;
+    private Label totalClientsServiced;
 
     @FXML
-    private Label obrazowanieKolejek;
+    private Label cashQueuesVisualisation;
 
     @FXML
-    private Label liczbaKolejekNorm;
+    private Label totalCashQueues;
 
     @FXML
-    private Label liczbaKasUprzywilejowanych;
+    private Label totalCashRegistersPrivileged;
 
     @FXML
-    private Label maxDlugoscKolejek;
+    private Label maxQueuesCount;
 
     @FXML
-    private Label zakupionychTowarow;
+    private Label totalProductsBought;
 
     @FXML
-    private Label zwroconeTowaryKasa;
+    private Label totalProductsReturned;
 
     @FXML
-    private Label klienciUprzywilejowani;
+    private Label clientsPrivileged;
 
-    public void addWszyscyWSklepie(int wszyscyklienci){
-        Platform.runLater(()->{wszyscywsklepie.setText("Klienci w sklepie: "+wszyscyklienci);});
+    public void addTotalClientsInShop(int totalClientsInShop){
+        Platform.runLater(()->{
+            this.totalClientsInShop.setText("Clients in shop: "+totalClientsInShop);});
     }
 
     @Override
-    public void addWszyscyNaZakupach(int wszyscyzakupy) {
-        Platform.runLater(()->{wszyscyNaZakupach.setText("Ludzie w trakcie zakupów: "+wszyscyzakupy);});
+    public void addTotalClientsInShopping(int totalClientsInShopping) {
+        Platform.runLater(()->{
+            this.totalClientsInShopping.setText("Clients during shopping: "+totalClientsInShopping);});
     }
 
     @Override
-    public void addWszyscyWKolejce(int wszyscykolejkach) {
-        Platform.runLater(()->{wszyscyWKolejkach.setText("Ludzie w kolejkach: "+wszyscykolejkach);});
+    public void addTotalClientsInCashQueues(int totalClientsInCashQueues) {
+        Platform.runLater(()->{
+            this.totalClientsInCashQueues.setText("Clients in cash queues: "+totalClientsInCashQueues);});
     }
 
     @Override
-    public void addWszyscyObsluzeni(int wszyscyobsluzeni) {
-        Platform.runLater(()->{wszyscyObsluzeniKlienci.setText("Ludzie obsłużeni: "+wszyscyobsluzeni);});
+    public void addTotalClientsServiced(int totalClientsServiced) {
+        Platform.runLater(()->{
+            this.totalClientsServiced.setText("Clients serviced: "+totalClientsServiced);});
     }
 
     @Override
-    public void obrazowanieKolejek(String kolejki) {
-        Platform.runLater(()->obrazowanieKolejek.setText(kolejki));
+    public void cashQueuesVisualisation(String cashQueuesVisualisation) {
+        Platform.runLater(()-> this.cashQueuesVisualisation.setText(cashQueuesVisualisation));
     }
 
     @Override
-    public void addLiczbeKolejek(int liczbaKolejek) {
-        Platform.runLater(()->{liczbaKolejekNorm.setText("Liczba kolejek: "+liczbaKolejek);});
+    public void addCashQueuesCount(int cashQueuesCount) {
+        Platform.runLater(()->{
+            totalCashQueues.setText("CashQueues count: "+cashQueuesCount);});
     }
 
     @Override
-    public void addLiczbaKasUprzywilejowanych(int liczbaKasUprz) {
-        Platform.runLater(()->{liczbaKasUprzywilejowanych.setText("Liczba kolejek uprzywilejowanych: "+liczbaKasUprz);});
+    public void addTotalCashRegistersPrivileged(int totalCashRegistersPrivileged) {
+        Platform.runLater(()->{
+            this.totalCashRegistersPrivileged.setText("Total privileged cash registers: "+totalCashRegistersPrivileged);});
     }
 
     @Override
-    public void addMaxDlugoscKolejek(int maxKolejek) {
-        Platform.runLater(()->{maxDlugoscKolejek.setText("Maksymalna liczba kolejek: "+maxKolejek);});
+    public void addMaxQueuesCount(int maxQueues) {
+        Platform.runLater(()->{maxQueuesCount.setText("Max Queues count: " + maxQueues);});
     }
 
     @Override
-    public void addZakupionychTowarow(int kupionychTowarow) {
-        Platform.runLater(()->{zakupionychTowarow.setText("Liczba zakupionych towarów: "+kupionychTowarow);});
+    public void addTotalProductsBought(int totalProductsBought) {
+        Platform.runLater(()->{
+            this.totalProductsBought.setText("Total products bought: "+totalProductsBought);});
     }
 
     @Override
-    public void addZwroconeTowary(int zwroconeTowary) {
-        Platform.runLater(()->{zwroconeTowaryKasa.setText("Liczba zwróconych towarów: "+zwroconeTowary);});
+    public void addTotalProductsReturned(int totalProductsReturned) {
+        Platform.runLater(()->{
+            this.totalProductsReturned.setText("Total products returned: "+totalProductsReturned);});
     }
 
     @Override
-    public void addKlienciUprzywilejowani(int klienciUprz) {
-        Platform.runLater(()->{klienciUprzywilejowani.setText("Klienci obsłużeni w kasie uprzywilejowanej: "+klienciUprz);});
+    public void addClientsPrivileged(int clientsPrivileged) {
+        Platform.runLater(()->{
+            this.clientsPrivileged.setText("Clients serviced in privileged cash registers: "+clientsPrivileged);});
     }
 
 }

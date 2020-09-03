@@ -1,4 +1,4 @@
-package federates.klient;
+package federates.client;
 
 import events.ExternalEvent;
 import hla.rti1516e.*;
@@ -11,10 +11,10 @@ import utils.TimeUtils;
 
 import java.util.ArrayList;
 
-public class KlientFederateAmbassador extends NullFederateAmbassador {
-    private static final Logger logger = new Logger("KlientFederateAmbassador");
+public class ClientFederateAmbassador extends NullFederateAmbassador {
+    private static final Logger logger = new Logger("ClientFederateAmbassador");
     private EncoderDecoder encoder;
-    private KlientFederate federate;
+    private ClientFederate federate;
 
     protected double federateTime        = 0.0;
     protected double federateLookahead   = 1.0;
@@ -28,7 +28,7 @@ public class KlientFederateAmbassador extends NullFederateAmbassador {
 
     private ArrayList<ExternalEvent> externalEvents = new ArrayList<>();
 
-    public KlientFederateAmbassador(KlientFederate federate) throws RTIexception {
+    public ClientFederateAmbassador(ClientFederate federate) throws RTIexception {
         this.federate = federate;
         this.encoder = new EncoderDecoder();
     }
@@ -46,14 +46,14 @@ public class KlientFederateAmbassador extends NullFederateAmbassador {
     @Override
     public void announceSynchronizationPoint(String label, byte[] tag) throws FederateInternalError {
         logger.info( "Synchronization point announced: " + label );
-        if( label.equals(KlientFederate.READY_TO_RUN) )
+        if( label.equals(ClientFederate.READY_TO_RUN) )
             this.isAnnounced = true;
     }
 
     @Override
     public void federationSynchronized(String label, FederateHandleSet failedToSyncSet) throws FederateInternalError {
         logger.info( "Federation Synchronized: " + label );
-        if( label.equals(KlientFederate.READY_TO_RUN) )
+        if( label.equals(ClientFederate.READY_TO_RUN) )
             this.isReadyToRun = true;
     }
 
@@ -94,12 +94,12 @@ public class KlientFederateAmbassador extends NullFederateAmbassador {
             externalEvents.add(new ExternalEvent(null, ExternalEvent.EventType.STOP_SIMULATION, receiveTime));
         }
 
-        if (interactionClass.equals(federate.koniecZakupowInteractionHandle)) {
+        if (interactionClass.equals(federate.shoppingFinishedInteractionHandle)) {
             double receiveTime = TimeUtils.convertTime(time);
-            logger.info(String.format("Receive interaction KoniecZakupow [TIME:%.1f]", receiveTime));
-            String idKlient = encoder.toString(theParameters.get(federate.idKlientKoniecHandle));
+            logger.info(String.format("Receive interaction ShoppingFinished [TIME:%.1f]", receiveTime));
+            String clientId = encoder.toString(theParameters.get(federate.clientIdFinishedHandle));
 
-            externalEvents.add(new ExternalEvent(idKlient, ExternalEvent.EventType.KONIEC_ZAKUPOW, receiveTime));
+            externalEvents.add(new ExternalEvent(clientId, ExternalEvent.EventType.SHOPPING_FINISHED, receiveTime));
         }
     }
 
